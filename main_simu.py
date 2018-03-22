@@ -61,15 +61,16 @@ p1g2_sd = p1g2_sd[0, :]
 # sigma_q = p1g2_sd   # We will consider the std only
 
 # Generate data from beta distributions samples from means and std
-n_moment = 50    # Number of generated moment (i.e. number of generated mean and number of generated sd)
-q_mean = np.linspace(0.1, 0.9, n_moment)
-sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_moment)
+n_mean = 50    # Number of generated means
+n_sigma = 50    # Number of generated standard deviations
+q_mean = np.linspace(0.1, 0.9, n_mean)
+sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_sigma)
 
 # Creation of a list of simulated distributions
-simulated_distrib = [[None for i in range(n_moment)] for j in range(n_moment)]
+simulated_distrib = [[None for j in range(n_sigma)] for i in range(n_mean)]
 
-for k_mean in range(n_moment):
-    for k_sigma in range(n_moment):
+for k_mean in range(n_mean):
+    for k_sigma in range(n_sigma):
         simulated_distrib[k_mean][k_sigma] = distrib.distrib(q_mean[k_mean], sigma_q[k_sigma])
 
 # # Plots the distribution
@@ -93,7 +94,7 @@ tc_lower_bound_sigma = 0
 tc_upper_bound_sigma = np.max(sigma_q)+2*sigma_q_sd
 
 # Resolution of the continuous plots
-plot_resolution = n_moment    # we consider the same resolution as for DPC
+plot_resolution = n_mean    # we consider the same resolution as for DPC
 
 # we define the x-axis for varying mean
 x_mean = np.linspace(np.min(q_mean), np.max(q_mean), plot_resolution)
@@ -114,10 +115,7 @@ n_subpopulation = 1    # by definition of rate coding
 rate_voxel = voxel.voxel(coding_scheme, n_population, n_subpopulation)
 
 # Computes the signal
-rate_signal = np.zeros([n_moment, n_moment])
-for k_mean in range(n_moment):    # For each mean
-    for k_sigma in range(n_moment):    # For each sd
-        rate_signal[k_mean, k_sigma] = rate_voxel.activity(simulated_distrib[k_mean][k_sigma], q_mean_sd, sigma_q_sd)
+rate_signal = rate_voxel.activity(simulated_distrib, x_mean, x_sigma, q_mean_sd, sigma_q_sd)
 
 ### PPC simulation
 
@@ -147,10 +145,7 @@ n_subpopulation = tc_mean.N    # here the mean and the std's tuning curves shall
 ppc_voxel = voxel.voxel(coding_scheme, n_population, n_subpopulation, [tc_mean, tc_sigma])
 
 # Computes the signal
-ppc_signal = np.zeros([n_moment, n_moment])
-for k_mean in range(n_moment):
-    for k_sigma in range(n_moment):
-        ppc_signal[k_mean, k_sigma] = ppc_voxel.activity(simulated_distrib[k_mean][k_sigma])
+ppc_signal = ppc_voxel.activity(simulated_distrib, x_mean, x_sigma)
 
 ### DPC simulation
 
@@ -162,10 +157,7 @@ n_subpopulation = tc_mean.N
 dpc_voxel = voxel.voxel(coding_scheme, n_population, n_subpopulation, [tc_mean])    # we only input the tuning curve of the mean
 
 # Computes the signal
-dpc_signal = np.zeros([n_moment, n_moment])
-for k_mean in range(n_moment):
-    for k_sigma in range(n_moment):
-        dpc_signal[k_mean, k_sigma] = dpc_voxel.activity(simulated_distrib[k_mean][k_sigma])
+dpc_signal = dpc_voxel.activity(simulated_distrib, x_mean)
 
 ### PLOTS
 
@@ -174,7 +166,7 @@ k_jump = 10    # To skip some curves
 
 fig = plt.figure()
 plt.subplot(321)
-for k_sigma in range(0,n_moment,k_jump):
+for k_sigma in range(0,n_sigma,k_jump):
     plt.plot(x_mean, rate_signal[:, k_sigma], label='sigma_q='+str(round(sigma_q[k_sigma],2)))
 plt.xlabel('Inferred probability')
 plt.ylabel('Signal intensity')
@@ -182,7 +174,7 @@ plt.title('Rate coding signal')
 plt.legend()
 
 plt.subplot(322)
-for k_mean in range(0,n_moment,k_jump):
+for k_mean in range(0,n_mean,k_jump):
     plt.plot(x_sigma, rate_signal[k_mean, :], label='q_mean='+str(round(q_mean[k_mean],2)))
 plt.xlabel('Inferred standard deviation')
 plt.ylabel('Signal intensity')
@@ -190,7 +182,7 @@ plt.title('Rate coding signal')
 plt.legend()
 
 plt.subplot(323)
-for k_sigma in range(0,n_moment,k_jump):
+for k_sigma in range(0,n_sigma,k_jump):
     plt.plot(x_mean, ppc_signal[:, k_sigma], label='sigma_q='+str(round(sigma_q[k_sigma],2)))
 plt.xlabel('Inferred probability')
 plt.ylabel('Signal intensity')
@@ -198,7 +190,7 @@ plt.title('PPC signal')
 plt.legend()
 
 plt.subplot(324)
-for k_mean in range(0,n_moment,k_jump):
+for k_mean in range(0, n_mean, k_jump):
     plt.plot(x_sigma, ppc_signal[k_mean, :], label='q_mean='+str(round(q_mean[k_mean],2)))
 plt.xlabel('Inferred standard deviation')
 plt.ylabel('Signal intensity')
@@ -206,7 +198,7 @@ plt.title('PPC signal')
 plt.legend()
 
 plt.subplot(325)
-for k_sigma in range(0,n_moment,k_jump):
+for k_sigma in range(0,n_sigma,k_jump):
     plt.plot(x_mean, dpc_signal[:, k_sigma], label='sigma_q='+str(round(sigma_q[k_sigma],2)))
 plt.xlabel('Inferred probability')
 plt.ylabel('Signal intensity')
@@ -214,7 +206,7 @@ plt.title('DPC signal')
 plt.legend()
 
 plt.subplot(326)
-for k_mean in range(0,n_moment,k_jump):
+for k_mean in range(0,n_mean,k_jump):
     plt.plot(x_sigma, dpc_signal[k_mean, :], label='q_mean='+str(round(q_mean[k_mean],2)))
 plt.xlabel('Inferred standard deviation')
 plt.ylabel('Signal intensity')

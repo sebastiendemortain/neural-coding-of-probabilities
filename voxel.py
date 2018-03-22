@@ -42,11 +42,11 @@ class voxel:
             self.tuning_curve[0] = tc[0]
 
     # Neural activity given one distribution
-    def activity(self, distrib, sigma_mean=0, sigma_sd=0):
-        q_mean = distrib.mean    # Mean of the distribution
-        sigma_q = distrib.sd    # Standard deviation of the distribution
+    def activity(self, distrib_array, x_mean, x_sigma=[np.nan], sigma_mean=np.nan, sigma_sd=np.nan):
+        n_mean = len(x_mean)
+        n_sigma = len(x_sigma)
 
-        activity = 0  # Initialization
+        activity = np.zeros([len(distrib_array), len(distrib_array[0])])  # Initialization
 
         if self.coding_scheme == 'rate':    # Rate coding case
             if self.n_population == 2:    # If the mean and the variance are encoded by two independent populations
@@ -55,32 +55,50 @@ class voxel:
                 We multiply the contribution of the uncertainty through a scaling factor (ratio of the std) in order 
                 to have same neural impact between mean and uncertainty
                 '''
-                #for k_mean in range[]
-                activity = self.neuron_fraction[0, 0]*q_mean + (sigma_mean/sigma_sd)*self.neuron_fraction[1, 0]*sigma_q
+                for k_mean in range(len(distrib_array)):
+                    for k_sigma in range(len(distrib_array[0])):
+                        distrib = distrib_array[k_mean][k_sigma]
+                        q_mean = distrib.mean  # Mean of the distribution
+                        sigma_q = distrib.sd  # Standard deviation of the distribution
+                        activity[k_mean, k_sigma] = self.neuron_fraction[0, 0]*q_mean \
+                                                    + (sigma_mean/sigma_sd)*self.neuron_fraction[1, 0]*sigma_q
 
         elif self.coding_scheme == 'ppc':    # Probabilistic population coding case
             # Activity due to mean encoding
             for i in range(self.tuning_curve[0].N):
-                activity += self.neuron_fraction[0, i]*self.tuning_curve[0].f(q_mean, i)
-                # Activity due to uncertainty encoding
-            for i in range(self.tuning_curve[1].N):
-                activity += self.neuron_fraction[1, i]*self.tuning_curve[1].f(sigma_q, i)
+                frac_mean = self.neuron_fraction[0, i]
+                frac_sigma = self.neuron_fraction[1, i]
+                f_mean = self.tuning_curve[0].f(x_mean, i)
+                f_sigma = self.tuning_curve[1].f(x_sigma, i)
+                for k_mean in range(n_mean):
+                    for k_sigma in range(n_sigma):
+                        activity[k_mean, k_sigma] += frac_mean*f_mean[k_mean]+frac_sigma*f_sigma[k_sigma]
 
         elif self.coding_scheme == 'dpc':    # Distributional population coding case
-            proj_num = np.zeros(self.tuning_curve[0].N)    # Initialization of the projections onto the tuning curves
-            proj = np.zeros(self.tuning_curve[0].N)
-            res = 10000    # Number of points used for the discretized integral computation
+            res = 10000    # Number of points used for the numerical integral
             delta_x = (self.tuning_curve[0].upper_bound-self.tuning_curve[0].lower_bound)/(res-1)    # Integral step
-            x = np.linspace(self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound, res)     # x-axis
-            beta = distrib.beta(x)
+            # x-axis for integration
+            x = np.linspace(self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound, res)
+            x = np.delete(x, -1)    # res-1 points shall be considered for the numerical integration
+
+            # Double list containing the array of the beta function at the desired resolution
+            beta = [[None for j in range(n_sigma)] for i in range(n_mean)]
+            for k_mean in range(n_mean):
+                for k_sigma in range(n_sigma):
+                    distrib = distrib_array[k_mean][k_sigma]
+                    beta[k_mean][k_sigma] = distrib.beta(x)
+
             # Activity due to the projection on the tuning curves
             for i in range(self.tuning_curve[0].N):
                 # Projection of the distribution on tuning curve i
-                # proj_num[i] = integrate.quad(lambda x: distrib.beta(x)*self.tuning_curve[0].f(x, i), self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound)[0]
-                f = self.tuning_curve[0].f(x, i)    # tuning curve vector
-                for k_x in range(res-1):
-                    proj[i] += beta[k_x]*f[k_x]*delta_x
-                activity += self.neuron_fraction[0, i]*proj[i]
+                f = self.tuning_curve[0].f(x, i)    # tuning curve i's values along the x-axis
+                frac = self.neuron_fraction[0, i]
+                for k_mean in range(n_mean):
+                    for k_sigma in range(n_sigma):
+                        proj = np.dot(beta[k_mean][k_sigma], f)*delta_x
+                        # proj_num = integrate.quad(lambda x: distrib.beta(x)*self.tuning_curve[0].f(x, i), self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound)[0]
+
+                        activity[k_mean, k_sigma] += frac*proj
 
         # Multiplication by the gain of the signal
         activity = self.alpha * activity
