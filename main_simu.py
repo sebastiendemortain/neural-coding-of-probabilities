@@ -61,7 +61,7 @@ p1g2_sd = p1g2_sd[0, :]
 # sigma_q = p1g2_sd   # We will consider the std only
 
 # Generate data from beta distributions samples from means and std
-n_moment = 50    # Number of generated moment (i.e. number of generated mean and number of generated sd)
+n_moment = 5    # Number of generated moment (i.e. number of generated mean and number of generated sd)
 q_mean = np.linspace(0.1, 0.9, n_moment)
 sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_moment)
 
@@ -170,7 +170,7 @@ for k_mean in range(n_moment):
 ### PLOTS
 
 # Plot the signal for different voxel types and different distributions
-k_jump = 10    # To skip some curves
+k_jump = 1    # To skip some curves
 
 fig = plt.figure()
 plt.subplot(321)
