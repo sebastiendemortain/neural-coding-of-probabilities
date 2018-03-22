@@ -96,8 +96,6 @@ class voxel:
                 for k_mean in range(n_mean):
                     for k_sigma in range(n_sigma):
                         proj = np.dot(beta[k_mean][k_sigma], f)*delta_x
-                        # proj_num = integrate.quad(lambda x: distrib.beta(x)*self.tuning_curve[0].f(x, i), self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound)[0]
-
                         activity[k_mean, k_sigma] += frac*proj
 
         # Multiplication by the gain of the signal

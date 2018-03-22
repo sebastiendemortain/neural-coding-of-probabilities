@@ -61,8 +61,8 @@ p1g2_sd = p1g2_sd[0, :]
 # sigma_q = p1g2_sd   # We will consider the std only
 
 # Generate data from beta distributions samples from means and std
-n_mean = 50    # Number of generated means
-n_sigma = 50    # Number of generated standard deviations
+n_mean = 5    # Number of generated means
+n_sigma = 5    # Number of generated standard deviations
 q_mean = np.linspace(0.1, 0.9, n_mean)
 sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_sigma)
 
@@ -162,7 +162,7 @@ dpc_signal = dpc_voxel.activity(simulated_distrib, x_mean)
 ### PLOTS
 
 # Plot the signal for different voxel types and different distributions
-k_jump = 10    # To skip some curves
+k_jump = 1    # To skip some curves
 
 fig = plt.figure()
 plt.subplot(321)
