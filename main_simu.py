@@ -61,7 +61,7 @@ p1g2_sd = p1g2_sd[0, :]
 # sigma_q = p1g2_sd   # We will consider the std only
 
 # Generate data from beta distributions samples from means and std
-n_moment = 100    # Number of generated moment (i.e. number of generated mean and number of generated sd)
+n_moment = 50    # Number of generated moment (i.e. number of generated mean and number of generated sd)
 q_mean = np.linspace(0.1, 0.9, n_moment)
 sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_moment)
 
@@ -169,14 +169,8 @@ for k_mean in range(n_moment):
 
 ### PLOTS
 
-# Plot the signal across voxels
-
-# The mean and sd we want
-k_mean = 1
-k_sigma = 1
-
 # Plot the signal for different voxel types and different distributions
-k_jump = 1    # To skip some curves
+k_jump = 10    # To skip some curves
 
 fig = plt.figure()
 plt.subplot(321)
@@ -221,7 +215,7 @@ plt.legend()
 
 plt.subplot(326)
 for k_mean in range(0,n_moment,k_jump):
-    plt.plot(x_sigma, dpc_signal[voxel, k_mean, :], label='q_mean='+str(round(q_mean[k_mean],2)))
+    plt.plot(x_sigma, dpc_signal[k_mean, :], label='q_mean='+str(round(q_mean[k_mean],2)))
 plt.xlabel('Inferred standard deviation')
 plt.ylabel('Signal intensity')
 plt.title('DPC signal')

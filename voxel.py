@@ -24,7 +24,7 @@ class voxel:
         for pop in range(n_population):
             for subpop in range(n_subpopulation):
                 # Number of neuron per subpopulation controlled by a sparsity exponent
-                n_neuron[pop, subpop] = rand.randrange(n_subpopulation)**sparsity_exp
+                n_neuron[pop, subpop] = (rand.randrange(n_subpopulation)+1)**sparsity_exp
             n_total_neuron[pop] = np.sum(n_neuron)
         for pop in range(n_population):
             for subpop in range(n_subpopulation):
@@ -45,8 +45,6 @@ class voxel:
     def activity(self, distrib, sigma_mean=0, sigma_sd=0):
         q_mean = distrib.mean    # Mean of the distribution
         sigma_q = distrib.sd    # Standard deviation of the distribution
-        a = distrib.a    # First parameter of the beta distribution
-        b = distrib.b    # Second parameter of the beta distribution
 
         activity = 0  # Initialization
 
@@ -57,23 +55,32 @@ class voxel:
                 We multiply the contribution of the uncertainty through a scaling factor (ratio of the std) in order 
                 to have same neural impact between mean and uncertainty
                 '''
+                #for k_mean in range[]
                 activity = self.neuron_fraction[0, 0]*q_mean + (sigma_mean/sigma_sd)*self.neuron_fraction[1, 0]*sigma_q
 
         elif self.coding_scheme == 'ppc':    # Probabilistic population coding case
-                # Activity due to mean encoding
-                for i in range(self.tuning_curve[0].N):
-                        activity += self.neuron_fraction[0, i]*self.tuning_curve[0].f(q_mean, i)
+            # Activity due to mean encoding
+            for i in range(self.tuning_curve[0].N):
+                activity += self.neuron_fraction[0, i]*self.tuning_curve[0].f(q_mean, i)
                 # Activity due to uncertainty encoding
-                for i in range(self.tuning_curve[1].N):
-                    activity += self.neuron_fraction[1, self.tuning_curve[0].N+i]*self.tuning_curve[1].f(sigma_q, i)
+            for i in range(self.tuning_curve[1].N):
+                activity += self.neuron_fraction[1, i]*self.tuning_curve[1].f(sigma_q, i)
 
-        elif self.coding_scheme == 'dpc':
-                proj = np.zeros(self.tuning_curve[0].N)    # Initialization of the projections onto the tuning curves
-                # Activity due to the projection on the tuning curves
-                for i in range(self.tuning_curve[0].N):
-                    # A MODIFIERRRRR
-                    proj[i] = integrate.quad(lambda x: stats.beta.pdf(x, a, b)*self.tuning_curve[0].f(x, i), self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound)[0]
-                    activity += self.neuron_fraction[0, i]*proj[i]
+        elif self.coding_scheme == 'dpc':    # Distributional population coding case
+            proj_num = np.zeros(self.tuning_curve[0].N)    # Initialization of the projections onto the tuning curves
+            proj = np.zeros(self.tuning_curve[0].N)
+            res = 10000    # Number of points used for the discretized integral computation
+            delta_x = (self.tuning_curve[0].upper_bound-self.tuning_curve[0].lower_bound)/(res-1)    # Integral step
+            x = np.linspace(self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound, res)     # x-axis
+            beta = distrib.beta(x)
+            # Activity due to the projection on the tuning curves
+            for i in range(self.tuning_curve[0].N):
+                # Projection of the distribution on tuning curve i
+                # proj_num[i] = integrate.quad(lambda x: distrib.beta(x)*self.tuning_curve[0].f(x, i), self.tuning_curve[0].lower_bound, self.tuning_curve[0].upper_bound)[0]
+                f = self.tuning_curve[0].f(x, i)    # tuning curve vector
+                for k_x in range(res-1):
+                    proj[i] += beta[k_x]*f[k_x]*delta_x
+                activity += self.neuron_fraction[0, i]*proj[i]
 
         # Multiplication by the gain of the signal
         activity = self.alpha * activity
