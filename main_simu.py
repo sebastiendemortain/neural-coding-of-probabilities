@@ -36,7 +36,7 @@ for k_mean in range(n_mean):
 
 # # Plots the distribution
 # fig = plt.figure()
-# k_mean = -1
+# k_mean = -11
 # k_sigma = -1
 # y = simulated_distrib[k_mean][k_sigma].beta(x)
 # plt.plot(x, y)    # Full distribution
