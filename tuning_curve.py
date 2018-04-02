@@ -22,7 +22,7 @@ class tuning_curve:
             mu = self.lower_bound+i*delta_mu
             # Variance of the tuning curve
             sigma2_f = self.t**2
-            tc_value = 1/np.sqrt(2*math.pi*sigma2_f)*np.exp(-0.5*(x-mu)**2/sigma2_f)
+            tc_value = np.exp(-0.5*(x-mu)**2/sigma2_f)
             return tc_value
         else:
             return
