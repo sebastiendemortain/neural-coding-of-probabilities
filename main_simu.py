@@ -21,46 +21,6 @@ data_mat = sio.loadmat('data/ideal_observer_toy_example.mat', struct_as_record=F
 
 ### Generate equivalent beta distribution
 
-# Generate data from beta distributions samples from means and std
-n_moment = 5    # Number of generated moment (i.e. number of generated mean and number of generated sd)
-q_mean = np.linspace(0.1, 0.9, n_moment)
-sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_moment)
-
-# Creation of a list of simulated distributions
-simulated_distrib = [[None for j in range(n_sigma)] for i in range(n_mean)]
-
-for k_mean in range(n_mean):
-    for k_sigma in range(n_sigma):
-        simulated_distrib[k_mean][k_sigma] = distrib.distrib(q_mean[k_mean], sigma[k_sigma])
-
-# # Plots the distribution
-# fig = plt.figure()
-# k_mean = -1
-# k_sigma = -1
-# y = simulated_distrib[k_mean][k_sigma].beta(x)
-# plt.plot(x, y)    # Full distribution
-# plt.show()
-
-# We find the variance of the data in order to scale equally activity from mean and activity from uncertainty
-q_mean_sd = np.std(q_mean)    # Variance of the signal of q_mean's
-sigma_sd = np.std(sigma)    # Variance of the signal of sigma's
-
-# Lower and upper bounds of the encoded summary quantity (for tuning curves)
-tc_lower_bound_mean = 0
-tc_upper_bound_mean = 1
-tc_lower_bound_sigma = 0
-# we define the upper bound to be a bit away from the highest uncertainty
-tc_upper_bound_sigma = np.max(sigma)+2*sigma_sd
-
-# Resolution of the continuous plots
-plot_resolution = n_mean    # we consider the same resolution as for DPC
-
-# we define the x-axis for varying mean
-x_mean = np.linspace(np.min(q_mean), np.max(q_mean), plot_resolution)
-# we define the x-axis for varying uncertainty
-x_sigma = np.linspace(np.min(sigma), np.max(sigma), plot_resolution)
-
-
 ### 1) Rate coding simulation
 
 
