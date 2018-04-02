@@ -22,16 +22,9 @@ data_mat = sio.loadmat('data/ideal_observer_toy_example.mat', struct_as_record=F
 ### Generate equivalent beta distribution
 
 # Generate data from beta distributions samples from means and std
-<<<<<<< HEAD
 n_moment = 5    # Number of generated moment (i.e. number of generated mean and number of generated sd)
 q_mean = np.linspace(0.1, 0.9, n_moment)
 sigma_q = np.linspace(np.mean(p1g2_sd)-np.std(p1g2_sd), np.mean(p1g2_sd)+np.std(p1g2_sd), n_moment)
-=======
-n_mean = 30    # Number of generated means
-n_sigma = 30    # Number of generated standard deviations
-q_mean = np.linspace(0.15, 0.85, n_mean)
-sigma = np.linspace(np.min(p1g2_sd), np.mean(p1g2_sd), n_sigma)
->>>>>>> test
 
 # Creation of a list of simulated distributions
 simulated_distrib = [[None for j in range(n_sigma)] for i in range(n_mean)]
@@ -125,11 +118,7 @@ dpc_signal = dpc_voxel.activity(simulated_distrib, x_mean, x_sigma)
 ### PLOTS
 
 # Plot the signal for different voxel types and different distributions
-<<<<<<< HEAD
 k_jump = 1    # To skip some curves
-=======
-k_jump = 6    # To skip some curves
->>>>>>> test
 
 fig = plt.figure()
 
