@@ -67,7 +67,7 @@ x_sigma = np.linspace(np.min(sigma), np.max(sigma), plot_resolution)
 
 # Properties of the "rate voxel" to be simulated
 coding_scheme = 'rate'
-population_fraction = [0.5, 0.5]    # one for the mean, one for the std
+population_fraction = [0.1, 0.9]    # one for the mean, one for the std
 
 # Creation of the "rate voxel"
 rate_voxel = voxel.voxel(coding_scheme, population_fraction)
@@ -79,7 +79,7 @@ rate_signal = rate_voxel.activity(simulated_distrib, x_mean, x_sigma, q_mean_sd,
 
 # Properties of the voxel to be simulated
 coding_scheme = 'ppc'
-population_fraction = [0.5, 0.5]    # Population fraction (one mean, one std)
+population_fraction = [0.1, 0.9]    # Population fraction (one mean, one std)
 
 # TC related to the mean
 tc_type_mean = 'gaussian'    # Tuning curve type
@@ -283,7 +283,7 @@ plt.subplot(212)
 for k_t in range(len(tested_t)):
     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
 
-plt.xlabel('Probability')
+plt.xlabel('Standard deviation')
 plt.ylabel('Sum over the tuning curves')
 plt.legend()
 plt.show()
