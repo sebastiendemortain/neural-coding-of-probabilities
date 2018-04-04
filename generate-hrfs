@@ -1,0 +1,74 @@
+#! /bin/bash
+# generate convolved regressors from event files
+# Time-stamp: <2017-07-20 14:26:43 cp983411>
+
+INPUT_DIR="$1/"
+OUTPUT_DIR="$2/" 
+   
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_bottomup.csv -o ${OUTPUT_DIR}1_bottomup_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_f0.csv -o ${OUTPUT_DIR}1_f0_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_freq.csv -o ${OUTPUT_DIR}1_freq_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_leftcorner.csv -o ${OUTPUT_DIR}1_leftcorner_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_mwe.csv -o ${OUTPUT_DIR}1_mwe_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_rms.csv -o ${OUTPUT_DIR}1_rms_reg.csv
+onsets2hrf -t 2 -n 282 -i ${INPUT_DIR}1_wordrate.csv -o ${OUTPUT_DIR}1_wordrate_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_bottomup.csv -o ${OUTPUT_DIR}2_bottomup_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_f0.csv -o ${OUTPUT_DIR}2_f0_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_freq.csv -o ${OUTPUT_DIR}2_freq_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_leftcorner.csv -o ${OUTPUT_DIR}2_leftcorner_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_mwe.csv -o ${OUTPUT_DIR}2_mwe_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_rms.csv -o ${OUTPUT_DIR}2_rms_reg.csv
+onsets2hrf -t 2 -n 298 -i ${INPUT_DIR}2_wordrate.csv -o ${OUTPUT_DIR}2_wordrate_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_bottomup.csv -o ${OUTPUT_DIR}3_bottomup_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_f0.csv -o ${OUTPUT_DIR}3_f0_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_freq.csv -o ${OUTPUT_DIR}3_freq_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_leftcorner.csv -o ${OUTPUT_DIR}3_leftcorner_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_mwe.csv -o ${OUTPUT_DIR}3_mwe_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_rms.csv -o ${OUTPUT_DIR}3_rms_reg.csv
+onsets2hrf -t 2 -n 340 -i ${INPUT_DIR}3_wordrate.csv -o ${OUTPUT_DIR}3_wordrate_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_bottomup.csv -o ${OUTPUT_DIR}4_bottomup_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_f0.csv -o ${OUTPUT_DIR}4_f0_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_freq.csv -o ${OUTPUT_DIR}4_freq_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_leftcorner.csv -o ${OUTPUT_DIR}4_leftcorner_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_mwe.csv -o ${OUTPUT_DIR}4_mwe_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_rms.csv -o ${OUTPUT_DIR}4_rms_reg.csv
+onsets2hrf -t 2 -n 303 -i ${INPUT_DIR}4_wordrate.csv -o ${OUTPUT_DIR}4_wordrate_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_bottomup.csv -o ${OUTPUT_DIR}5_bottomup_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_f0.csv -o ${OUTPUT_DIR}5_f0_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_freq.csv -o ${OUTPUT_DIR}5_freq_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_leftcorner.csv -o ${OUTPUT_DIR}5_leftcorner_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_mwe.csv -o ${OUTPUT_DIR}5_mwe_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_rms.csv -o ${OUTPUT_DIR}5_rms_reg.csv
+onsets2hrf -t 2 -n 265 -i ${INPUT_DIR}5_wordrate.csv -o ${OUTPUT_DIR}5_wordrate_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_bottomup.csv -o ${OUTPUT_DIR}6_bottomup_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_f0.csv -o ${OUTPUT_DIR}6_f0_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_freq.csv -o ${OUTPUT_DIR}6_freq_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_leftcorner.csv -o ${OUTPUT_DIR}6_leftcorner_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_mwe.csv -o ${OUTPUT_DIR}6_mwe_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_rms.csv -o ${OUTPUT_DIR}6_rms_reg.csv
+onsets2hrf -t 2 -n 343 -i ${INPUT_DIR}6_wordrate.csv -o ${OUTPUT_DIR}6_wordrate_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_bottomup.csv -o ${OUTPUT_DIR}7_bottomup_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_f0.csv -o ${OUTPUT_DIR}7_f0_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_freq.csv -o ${OUTPUT_DIR}7_freq_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_leftcorner.csv -o ${OUTPUT_DIR}7_leftcorner_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_mwe.csv -o ${OUTPUT_DIR}7_mwe_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_rms.csv -o ${OUTPUT_DIR}7_rms_reg.csv
+onsets2hrf -t 2 -n 325 -i ${INPUT_DIR}7_wordrate.csv -o ${OUTPUT_DIR}7_wordrate_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_bottomup.csv -o ${OUTPUT_DIR}8_bottomup_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_f0.csv -o ${OUTPUT_DIR}8_f0_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_freq.csv -o ${OUTPUT_DIR}8_freq_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_leftcorner.csv -o ${OUTPUT_DIR}8_leftcorner_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_mwe.csv -o ${OUTPUT_DIR}8_mwe_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_rms.csv -o ${OUTPUT_DIR}8_rms_reg.csv
+onsets2hrf -t 2 -n 292 -i ${INPUT_DIR}8_wordrate.csv -o ${OUTPUT_DIR}8_wordrate_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_bottomup.csv -o ${OUTPUT_DIR}9_bottomup_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_f0.csv -o ${OUTPUT_DIR}9_f0_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_freq.csv -o ${OUTPUT_DIR}9_freq_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_leftcorner.csv -o ${OUTPUT_DIR}9_leftcorner_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_mwe.csv -o ${OUTPUT_DIR}9_mwe_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_rms.csv -o ${OUTPUT_DIR}9_rms_reg.csv
+onsets2hrf -t 2 -n 368 -i ${INPUT_DIR}9_wordrate.csv -o ${OUTPUT_DIR}9_wordrate_reg.csv
+
+
+
+
