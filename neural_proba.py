@@ -1,9 +1,8 @@
 import random as rand
 import numpy as np
 from scipy import stats
-from scipy import integrate
+from nistats import hemodynamic_models
 import utils
-
 
 '''Related to the distribution'''
 
@@ -254,19 +253,52 @@ class voxel:
         return activity
 
 
+class experiment:
+
+    def __init__(self, initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, distributions):
+        self.initial_time = initial_time
+        self.final_time = final_time
+        self.n_blocks = n_blocks
+        self.n_stimuli = len(stimulus_onsets)
+        self.stimulus_onsets = stimulus_onsets
+        self.stimulus_durations = stimulus_durations
+        self.distributions = distributions    # Encoded distributions
+
+
 class fmri:
 
-
-    ''' This class defines the MRI session modalities '''
+    ''' This class defines the fMRI modalities '''
 
     # SNR of the signal due to fMRI noise
     snr = 1
 
-    def __init___(self, n_blocks, n_stimuli_per_block, time_between_stimuli, time_between_scans, dt):
-        self.n_blocks = n_blocks
-        self.n_stimuli_per_block = n_stimuli_per_block
-        self.time_between_stimuli = time_between_stimuli
-        self.time_between_scans = time_between_scans
+    def __init__(self, initial_frame_time, final_frame_time, dt, scan_times):
+        self.initial_frame_time = initial_frame_time
+        self.final_frame_time = final_frame_time
         self.dt = dt    # Temporal resolution
+        self.frame_times = np.arange(self.initial_frame_time, self.final_frame_time, self.dt)    # for now
+        self.scan_times = scan_times
+        self.n_scans = len(scan_times)
 
-    #def generate_bold(self, activity):
+    def get_bold_signal(self, exp, amplitudes, hrf_model):
+        # To get the stimuli signal within the frame_times framework
+        stim = np.zeros_like(self.frame_times)  # Contains amplitude of the stimulus in the frame_times space
+        for k in range(exp.n_stimuli):
+            stim[(self.frame_times > exp.stimulus_onsets[k])
+                 * (self.frame_times <= exp.stimulus_onsets[k] + exp.stimulus_durations[k])] \
+                = amplitudes[k]
+
+        # Build experimental condition vector
+        exp_condition = np.array((exp.stimulus_onsets, exp.stimulus_durations, amplitudes[:exp.n_stimuli]))\
+            .reshape(3, exp.n_stimuli)
+
+        signal, name = hemodynamic_models.compute_regressor(
+                exp_condition, hrf_model, self.frame_times, con_id='main',
+                oversampling=16)
+        return signal, name, stim
+
+            # def generate_bold(self, activity):
+    #     # Conversion of the successive activities to the temporal sequence of activity
+    #     stim = np.zeros_like(self.frame_times)
+    #     for k in range(n_stimuli_per_block):
+    #         stim[(frame_times > )]
