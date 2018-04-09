@@ -5,7 +5,10 @@ from scipy import io as sio
 from scipy import stats
 import numpy as np
 #import decimal
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
 
 import neural_proba
 from neural_proba import distrib
@@ -18,12 +21,16 @@ from neural_proba import fmri
 # Define the seed to reproduce results from random processes
 rand.seed(2);
 
+# In order to plot the full range of distribution with 2D grid of mean and sd (True)
+# or the distributions of the sequence only (False)
+plot_all_range = False
+
+#########################################
+
 # Import Matlab structure containing data and defining inputs
 data_mat = sio.loadmat('data/ideal_observer_1.mat', struct_as_record=False)
 
 [p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
-
-plot_all_range = False
 
 ### Generate equivalent beta distribution
 
@@ -32,8 +39,8 @@ plot_all_range = False
 if plot_all_range:
 
     # Generate data from beta distributions samples from means and std
-    n_mean = 30    # Number of generated means
-    n_sigma = 30    # Number of generated standard deviations
+    n_mean = 10    # Number of generated means
+    n_sigma = 10    # Number of generated standard deviations
     q_mean = np.linspace(np.min(p1g2_mean), np.max(p1g2_mean), n_mean)
     sigma = np.linspace(np.min(p1g2_sd), np.mean(p1g2_sd), n_sigma)    # We don't go to the max to have bell shaped beta
 
@@ -61,13 +68,36 @@ if plot_all_range:
     # we define the x-axis for varying uncertainty
     x_sigma = np.linspace(np.min(sigma), np.max(sigma), plot_resolution)
 else:
+    # # We remove the infinite values
+    # inf_indices = [0, 1, 205, 206, 207, 208, 299]
+    # p1g2_mean = np.delete(p1g2_mean, inf_indices)
+    # p1g2_sd = np.delete(p1g2_sd, inf_indices)
+    # p1g2_dist = np.delete(p1g2_dist, inf_indices, 1)
+
+    #
+    # # Plots the distribution
+    # fig = plt.figure()
+    # x = np.linspace(0, 1, 50)
+    # y = p1g2_dist[:, 299]
+    # plt.plot(x, y)    # Full distribution
+    # plt.show()
+
+
     n_stimuli = p1g2_mean.shape[1]
     q_mean = np.reshape(p1g2_mean, (n_stimuli,))
     sigma = np.reshape(p1g2_sd, (n_stimuli,))
+    dist = p1g2_dist
     # Creation of a list of simulated distributions
     simulated_distrib = [None for i in range(n_stimuli)]
+    # test = np.zeros(n_stimuli)
+    x = np.linspace(0, 1, 1000, endpoint=True)
     for k in range(n_stimuli):
-        simulated_distrib[k] = distrib(q_mean[k], sigma[k])
+        # Normalization of the distribution
+        norm_dist = p1g2_dist[:, k]*(len(p1g2_dist[1:, k])-1)/np.sum(p1g2_dist[1:, k])
+        simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
+        # test[k] = np.max(simulated_distrib[k].beta(x))
+        # if np.isinf(test[k]):
+        #     print(k)
 
 # We find the variance of the data in order to scale equally activity from mean and activity from uncertainty
 q_mean_sd = np.std(q_mean)    # Variance of the signal of q_mean's
@@ -82,7 +112,6 @@ tc_upper_bound_sigma = np.max(sigma)+np.std(sigma)
 
 ### 1) Rate coding simulation
 
-
 # Properties of the "rate voxel" to be simulated
 coding_scheme = 'rate'
 population_fraction = [0.5, 0.5]    # one for the mean, one for the std
@@ -93,7 +122,7 @@ rate_voxel = voxel(coding_scheme, population_fraction)
 # Computes the signal
 rate_activity = rate_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd)
 
-### PPC simulation
+### 2) PPC simulation
 
 # Properties of the voxel to be simulated
 coding_scheme = 'ppc'
@@ -119,7 +148,7 @@ ppc_voxel = voxel(coding_scheme, population_fraction, [tc_mean, tc_sigma])
 # Computes the signal
 ppc_activity = ppc_voxel.generate_activity(simulated_distrib)
 
-### DPC simulation
+### 3) DPC simulation
 
 # Properties of the voxel to be simulated
 coding_scheme = 'dpc'
@@ -132,14 +161,124 @@ dpc_voxel = voxel(coding_scheme, population_fraction, [tc_mean])    # we only in
 dpc_voxel.subpopulation_fraction = np.expand_dims(ppc_voxel.subpopulation_fraction[0, :], axis=0)
 
 # Computes the signal
-dpc_activity = dpc_voxel.generate_activity(simulated_distrib)
+dpc_activity = dpc_voxel.generate_activity(simulated_distrib, use_high_integration_resolution=False)
+
+# Experimental design information
+eps = 1e-5    # For floating points issues
+
+between_stimuli_duration = 1.3
+initial_time = between_stimuli_duration + eps
+n_blocks = 1
+n_stimuli = 350
+final_time = between_stimuli_duration*(n_stimuli+1) + eps
+stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli)
+stimulus_durations = 0.01*np.ones_like(stimulus_onsets)    # Dirac-like stimuli
+
+# Creation of experiment object
+exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
+
+# fMRI information
+
+final_frame_offset = 15    # Frame recording duration after the last stimulus has been shown
+initial_frame_time = 0
+final_frame_time = exp.final_time + final_frame_offset
+dt = 0.01    # Temporal resolution of the fMRI scanner
+
+between_scans_duration = 2    # in seconds
+final_scan_offset = 10    # Scan recording duration after the last stimulus has been shown
+initial_scan_time = initial_frame_time + between_scans_duration
+final_scan_time = exp.final_time + final_scan_offset
+scan_times = np.arange(initial_scan_time, final_scan_time, between_scans_duration)
+
+# Creation of fmri object
+simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
+
+frame_times = simu_fmri.frame_times
+
+#### SIMULATION STARTS
+
+# Properties of the voxel to be simulated
+true_coding_scheme = 'ppc'
+true_population_fraction = [0.5, 0.5]  # one for the mean, one for the std
+true_tc = [tc_mean, tc_sigma]    # No tuning curve thing
+fmri_gain = 100    # Amplification of the signal
+
+# Fitted model
+coding_scheme = 'ppc'
+tc = [tc_mean, tc_sigma]
+
+# Computes the BOLD signal
+# Creation of the voxel
+true_voxel = voxel(true_coding_scheme, true_population_fraction, true_tc)
+
+# The amplitudes of the neural signal
+amplitudes = true_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd, use_high_integration_resolution=True)
+
+hrf_models = ['spm']
+
+# #########################################################################
+# sample the hrf
+# fig = plt.figure(figsize=(9, 4))
+for i, hrf_model in enumerate(hrf_models):
+    signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, amplitudes, hrf_model, fmri_gain)
+
+    # plt.subplot(1, 2, i + 1)
+    # # plt.fill(frame_times, stim, 'k', alpha=.5, label='stimulus')
+    # for j in range(signal.shape[1]):
+    #     plt.plot(frame_times, signal.T[j], label=name[j])
+    # plt.xlabel('time (s)')
+    # plt.legend(loc=1)
+    # plt.title(hrf_model)
+
+# plt.subplots_adjust(bottom=.12)
+# plt.show()
+
+# Compute the response vector
+y = scan_signal
+y = stats.zscore(y)
+# Compute the regressors for the selected coding scheme
+X = simu_fmri.get_regressor(exp, coding_scheme, tc)
+X = stats.zscore(X)
+
+X_train = X[:100, :]
+y_train = y[:100]
+
+X_test = X[100:, :]
+y_test = y[100:]
+
+# Create linear regression object
+regr = linear_model.LinearRegression()
+
+# Train the model using the training set
+regr.fit(X_train, y_train)
+
+# Make predictions using the testing set
+y_pred = regr.predict(X_test)
+
+# The coefficients
+print('Coefficients: \n', regr.coef_)
+print('True coefficients : \n', fmri_gain*true_voxel.population_fraction)
+# The mean squared error
+print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
+# Explained variance score: 1 is perfect prediction
+print('Variance score: %.2f' % r2_score(y_test, y_pred))
+a=1
+# # Plot outputs
+# plt.scatter(X_test, y_test,  color='black')
+# plt.plot(X_test, y_pred, color='blue', linewidth=3)
+#
+# plt.xticks(())
+# plt.yticks(())
+#
+# plt.show()
+
 
 ### PLOTS
 
 if plot_all_range:
 
     # Plot the signal for different voxel types and different distributions
-    k_jump = 6    # To skip some curves
+    k_jump = 2    # To skip some curves
 
     fig = plt.figure()
 
@@ -317,55 +456,3 @@ if plot_all_range:
 # plt.show()
 
 ##################
-
-# Experimental design information
-eps = 1e-5    # For floating points issues
-
-initial_time = 0+eps
-n_blocks = 1
-n_stimuli = 10
-between_stimuli_duration = 1.3+eps
-final_time = between_stimuli_duration*n_stimuli
-stimulus_onsets = np.arange(initial_time+between_stimuli_duration, final_time +eps, between_stimuli_duration)
-stimulus_durations = 0.01*np.ones_like(stimulus_onsets)    # Dirac-like stimuli
-
-# Creation of experiment object
-exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
-
-# fMRI information
-
-
-initial_frame_time = 0
-final_frame_time = 30
-dt = 0.01    # Temporal resolution of the fMRI scanner
-
-between_scans_duration = 2    # in seconds
-scan_times = np.arange(initial_frame_time+between_scans_duration, exp.final_time, between_scans_duration)
-# Creation of fmri object
-simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
-
-frame_times = simu_fmri.frame_times
-
-# Computes the BOLD signal
-
-amplitudes = np.ones(n_stimuli)    # The amplitudes of the neural signal
-
-
-hrf_models = [None, 'spm']
-
-#########################################################################
-# sample the hrf
-fig = plt.figure(figsize=(9, 4))
-for i, hrf_model in enumerate(hrf_models):
-    signal, name, stim = simu_fmri.get_bold_signal(exp, amplitudes, hrf_model)
-
-    plt.subplot(1, 2, i + 1)
-    plt.fill(frame_times, stim, 'k', alpha=.5, label='stimulus')
-    for j in range(signal.shape[1]):
-        plt.plot(frame_times, signal.T[j], label=name[j])
-    plt.xlabel('time (s)')
-    plt.legend(loc=1)
-    plt.title(hrf_model)
-
-plt.subplots_adjust(bottom=.12)
-plt.show()

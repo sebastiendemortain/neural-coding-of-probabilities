@@ -7,3 +7,8 @@ def get_dimension_list(matrix):
         matrix = matrix[0]
     number_of_dimensions = len(dims)
     return number_of_dimensions
+
+def find_nearest(array, value):
+    idx = (np.abs(array-value)).argmin()
+    return idx, array[idx]
+
