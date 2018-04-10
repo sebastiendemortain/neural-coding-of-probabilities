@@ -1,6 +1,6 @@
 import random as rand
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from scipy import stats
 from scipy import integrate
 from nistats import hemodynamic_models
@@ -71,6 +71,112 @@ class tuning_curve:
         else:
             return
 
+    def compute_projection(self, distrib_array, i, use_high_integration_resolution):
+        '''Returns the vector/matrix of projection onto the i-th tuning curve of the 2D-grid/the sequence of
+        distributions.'''
+        # Finds out whether we use 2D grid or just a sequence of distributions
+        n_dims = utils.get_dimension_list(distrib_array)
+        if n_dims == 2:
+            n_mean = len(distrib_array)
+            n_sigma = len(distrib_array[0])
+            proj = np.zeros([n_mean, n_sigma])  # Initialization
+        elif n_dims == 1:
+            n_stimuli = len(distrib_array)
+            proj = np.zeros(n_stimuli)  # Initialization
+
+        # Decide the numerical way the integral are computed
+        if use_high_integration_resolution:
+            res = 1e5  # Number of points used for the numerical integral
+        else:
+            res = 51  # We take the distribution from the Matlab file
+
+        eps = 0  # Reduction of the interval for dealing with boundary issues of the beta function
+        # x-axis for integration
+        x = np.linspace(self.lower_bound + eps, self.upper_bound - eps, res,
+                        endpoint=True)
+        x = np.delete(x, -1)  # res-1 points shall be considered for the numerical integration
+        # Integral step
+        delta_x = (self.upper_bound - self.lower_bound - 2 * eps) / (res - 1)
+
+        # Value of the distribution on tuning curve i
+        f = self.f(x, i)  # tuning curve i's values along the x-axis
+
+        # Double list containing the array of the beta function at the desired resolution
+        if n_dims == 2:
+            beta = [[None for j in range(n_sigma)] for i in range(n_mean)]
+            # sum_err = 0
+            # err_array = np.array([0])
+            for k_mean in range(n_mean):
+                for k_sigma in range(n_sigma):
+                    # Projection of the distribution on tuning curve i
+                    distrib = distrib_array[k_mean][k_sigma]
+                    if use_high_integration_resolution:
+                        beta[k_mean][k_sigma] = distrib.beta(x)
+                    else:
+                        beta[k_mean][k_sigma] = distrib.beta(x)
+                        # beta[k_mean][k_sigma] = distrib.dist
+
+                    proj[k_mean, k_sigma] = np.dot(beta[k_mean][k_sigma], f) * delta_x
+                    # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
+                    # err = np.abs(proj[k_mean, k_sigma]-proj_num)#/np.sqrt(np.dot(proj[k_mean, k_sigma],proj[k_mean, k_sigma]))
+                    # sum_err += err
+                    # err_array = np.append(err_array, err)
+                    # if np.abs(proj[k_mean, k_sigma]-proj_num) > 0.01:
+                    #     print('ISSUE WITH THE NUMERICAL INTEGRATION. See the dpc case in voxel.activity')
+                    #print(err)
+
+
+                    # # Plots the difference between theoretical and sampled distributions
+                    # fig = plt.figure()
+                    # y1 = beta[k_mean][k_sigma]
+                    # x_ = np.linspace(0,1, 10000, endpoint=True)
+                    # y2 = distrib.beta(x_)
+                    # ax = plt.subplot(111)
+                    # ax.bar(x - 0.005, y1, width=0.005, color='b', align='center')
+                    # ax.bar(x, y2, width=0.005, color='r', align='center')
+                    # plt.show()
+                    #
+                    # a = 1
+
+        # Single list containing the array of the beta function at the desired resolution
+        elif n_dims == 1:
+            beta = [None for k in range(n_stimuli)]
+
+            # sum_err = 0
+            # Projection of the distribution on tuning curve i
+            f = self.f(x, i)  # tuning curve i's values along the x-axis
+
+            for k in range(n_stimuli):
+                distrib = distrib_array[k]
+                if use_high_integration_resolution:
+                    beta[k] = distrib.beta(x)
+                else:
+                    beta[k] = distrib.dist
+
+                proj[k] = np.dot(beta[k], f) * delta_x
+                # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
+                # sum_err += np.abs(proj-proj_num)/np.sqrt(np.dot(proj,proj))
+                # if np.abs(proj-proj_num) > 0.01:
+                #     print('ISSUE WITH THE NUMERICAL INTEGRATION. See the dpc case in voxel.activity')
+                # print(sum_err)
+
+                # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
+                # err = np.abs(proj-proj_num)/np.sqrt(np.dot(proj,proj))
+                # sum_err += err
+
+                # # Plots the difference between theoretical and sampled distributions
+                # fig = plt.figure()
+                # y1 = beta[k]
+                # y2=distrib.beta(x)
+                # ax = plt.subplot(111)
+                # ax.bar(x - 0.005, y1, width=0.005, color='b', align='center')
+                # ax.bar(x, y2, width=0.005, color='r', align='center')
+                # plt.show()
+                #
+                # a=1
+        return proj
+
+
 class voxel:
 
     '''
@@ -116,6 +222,12 @@ class voxel:
                 subpopulation_fraction[pop, subpop] = n_neuron[pop, subpop]/n_total_neuron[pop]
 
         self.subpopulation_fraction = subpopulation_fraction
+        self.weights = np.zeros(
+            (self.n_population, self.n_subpopulation))  # the weights in the activity linear combination
+        for pop in range(self.n_population):
+            for subpop in range(self.n_subpopulation):
+                self.weights[pop, subpop] = self.neural_gain\
+                                            *self.population_fraction[pop]*self.subpopulation_fraction[pop, subpop]
 
     # Neural activity given one distribution
     def generate_activity(self, distrib_array, q_mean_sd=np.nan, sigma_sd=np.nan,
@@ -156,6 +268,8 @@ class voxel:
                         activity[k] = self.population_fraction[0] * self.subpopulation_fraction[0, 0] \
                                                     * q_mean + (q_mean_sd / sigma_sd) * self.population_fraction[1] \
                                                                * self.subpopulation_fraction[1, 0] * sigma
+                # Correction of the rate weights related to sigma
+                self.weights[1, :] = self.weights[1, :] * (q_mean_sd / sigma_sd)
 
         elif self.coding_scheme == 'ppc':    # Probabilistic population coding case
 
@@ -171,14 +285,12 @@ class voxel:
                     x_sigma[k_sigma] = distrib.sd
 
                 for i in range(self.tuning_curve[0].N):
-                    frac_mean = self.subpopulation_fraction[0, i]
-                    frac_sigma = self.subpopulation_fraction[1, i]
                     f_mean = self.tuning_curve[0].f(x_mean, i)
                     f_sigma = self.tuning_curve[1].f(x_sigma, i)
                     for k_mean in range(n_mean):
                         for k_sigma in range(n_sigma):
-                            activity[k_mean, k_sigma] += self.population_fraction[0]*frac_mean*f_mean[k_mean]\
-                                                         + self.population_fraction[1]*frac_sigma*f_sigma[k_sigma]
+                            activity[k_mean, k_sigma] += self.weights[0, i]*f_mean[k_mean]\
+                                                         + self.weights[1, i]*f_sigma[k_sigma]
 
             elif n_dims == 1:
                 # Defines the 1D-grid of (mean, sigma)
@@ -194,103 +306,19 @@ class voxel:
                     frac_sigma = self.subpopulation_fraction[1, i]
                     f_mean = self.tuning_curve[0].f(x_mean, i)
                     f_sigma = self.tuning_curve[1].f(x_sigma, i)
-                    for k in range(n_stimuli):
-                        activity[k] += self.population_fraction[0]*frac_mean*f_mean[k]\
-                                                         + self.population_fraction[1]*frac_sigma*f_sigma[k]
 
+                    for k in range(n_stimuli):
+                        activity[k] += self.weights[0, i]*f_mean[k]\
+                                                         + self.weights[1, i]*f_sigma[k]
         elif self.coding_scheme == 'dpc':    # Distributional population coding case
 
-            if use_high_integration_resolution:    # Use the beta distribution computed from the mean and the std
-                res = 100  # Number of points used for the numerical integral
-                eps = 0  # Reduction of the interval for dealing with boundary issues of the beta function
-                # x-axis for integration
-                x = np.linspace(self.tuning_curve[0].lower_bound + eps, self.tuning_curve[0].upper_bound - eps,
-                                res, endpoint=True)
-                x = np.delete(x, -1)  # res-1 points shall be considered for the numerical integration
-                delta_x = (self.tuning_curve[0].upper_bound - self.tuning_curve[0].lower_bound - 2 * eps) / (
-                    res - 1)  # Integral step
-            else:  # Use the distribution from the Matlab code with low resolution
-                res = 51
-                eps = 0
-                x = np.linspace(self.tuning_curve[0].lower_bound + eps,
-                                self.tuning_curve[0].upper_bound - eps,
-                                res, endpoint=True)
-                x = np.delete(x, -1)   # res-1 points shall be considered for the numerical integration
-                delta_x = (self.tuning_curve[0].upper_bound
-                           - self.tuning_curve[0].lower_bound - 2 * eps) / (res - 1)  # Integral step
-
-            # Double list containing the array of the beta function at the desired resolution
-            if n_dims == 2:
-                beta = [[None for j in range(n_sigma)] for i in range(n_mean)]
-
-                # Activity due to the projection on the tuning curves
-                for i in range(self.tuning_curve[0].N):
-                    frac = self.subpopulation_fraction[0, i]
-                    # Projection of the distribution on tuning curve i
-                    f = self.tuning_curve[0].f(x, i)    # tuning curve i's values along the x-axis
-
-                    sum_err = 0
-                    for k_mean in range(n_mean):
-                        for k_sigma in range(n_sigma):
-                            # Projection of the distribution on tuning curve i
-                            distrib = distrib_array[k_mean][k_sigma]
-                            if use_high_integration_resolution:
-                                beta[k_mean][k_sigma] = distrib.beta(x)
-                            else:
-                                beta[k_mean][k_sigma] = distrib.dist
-
-                            proj = np.dot(beta[k_mean][k_sigma], f)*delta_x
-                            # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
-                            activity[k_mean, k_sigma] += frac*proj
-                            # err = np.abs(proj-proj_num)/np.sqrt(np.dot(proj,proj))
-                            # sum_err += err
-                            # if np.abs(proj-proj_num) > 0.01:
-                            #     print('ISSUE WITH THE NUMERICAL INTEGRATION. See the dpc case in voxel.activity')
-                            # print(sum_err)
-            # Single list containing the array of the beta function at the desired resolution
-            elif n_dims == 1:
-                beta = [None for k in range(n_stimuli)]
-
-                # sum_err = 0
-                # Activity due to the projection on the tuning curves
-                for i in range(self.tuning_curve[0].N):
-                    frac = self.subpopulation_fraction[0, i]
-                    # Projection of the distribution on tuning curve i
-                    f = self.tuning_curve[0].f(x, i)  # tuning curve i's values along the x-axis
-
-                    for k in range(n_stimuli):
-                        distrib = distrib_array[k]
-                        if use_high_integration_resolution:
-                            beta[k] = distrib.beta(x)
-                        else:
-                            beta[k] = distrib.dist
-
-                        proj = np.dot(beta[k], f) * delta_x
-                        # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
-                        activity[k] += frac * proj
-                        # sum_err += np.abs(proj-proj_num)/np.sqrt(np.dot(proj,proj))
-                        # if np.abs(proj-proj_num) > 0.01:
-                        #     print('ISSUE WITH THE NUMERICAL INTEGRATION. See the dpc case in voxel.activity')
-                        # print(sum_err)
-
-                        # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
-                        # err = np.abs(proj-proj_num)/np.sqrt(np.dot(proj,proj))
-                        # sum_err += err
-
-                        # # Plots the difference between theoretical and sampled distributions
-                        # fig = plt.figure()
-                        # y1 = beta[k]
-                        # y2=distrib.beta(x)
-                        # ax = plt.subplot(111)
-                        # ax.bar(x - 0.005, y1, width=0.005, color='b', align='center')
-                        # ax.bar(x, y2, width=0.005, color='r', align='center')
-                        # plt.show()
-
+            for i in range(self.tuning_curve[0].N):
+                proj = self.tuning_curve[0].compute_projection(distrib_array, i, use_high_integration_resolution)
+                activity += self.weights[0, i] * proj
 
         # Multiplication by the gain of the signal
         activity = self.neural_gain * activity
         return activity
-
 
 class experiment:
 
@@ -392,39 +420,15 @@ class fmri:
 
             tc_mean = tc[0]    # Tuning curves of interest for DPC
 
-            if use_high_integration_resolution:
-                res = 1e5    # Number of points used for the numerical integral
-                eps = 0  # Reduction of the interval for dealing with boundary issues of the beta function
-                # x-axis for integration
-                x = np.linspace(tc_mean.lower_bound+eps, tc_mean.upper_bound-eps, res)
-                x = np.delete(x, -1)    # res-1 points shall be considered for the numerical integration
-                delta_x = (tc_mean.upper_bound-tc_mean.lower_bound-2*eps)/(res-1)    # Integral step
-            else:
-                res = 51    # Number of points used for the numerical integral
-                eps = 0  # Reduction of the interval for dealing with boundary issues of the beta function
-                # x-axis for integration
-                x = np.linspace(tc_mean.lower_bound+eps, tc_mean.upper_bound-eps, res)
-                x = np.delete(x, -1)    # res-1 points shall be considered for the numerical integration
-                delta_x = (tc_mean.upper_bound-tc_mean.lower_bound-2*eps)/(res-1)    # Integral step
-
-            beta = [None for k in range(exp.n_stimuli)]
-            for k in range(exp.n_stimuli):
-                distrib = exp.distributions[k]
-                beta[k] = distrib.beta(x)
-
             # Initialization of the design matrix
             X = np.zeros((len(self.scan_times), tc_mean.N))
             scan_signal = np.zeros((len(self.scan_times), tc_mean.N))
-            proj = np.zeros((exp.n_stimuli, tc_mean.N))
 
             for i in range(tc_mean.N):
                 # Projection calculation
-                f = tc_mean.f(x, i)  # tuning curve i's values along the x-axis
-                for k in range(exp.n_stimuli):
-                    proj[k, i] = np.dot(beta[k], f) * delta_x
-
+                proj = tc_mean.compute_projection(exp.distributions, i, use_high_integration_resolution)
                 signal_tmp, scan_signal_tmp, name, stim = \
-                    self.get_bold_signal(exp, proj[:, i], hrf_model)
+                    self.get_bold_signal(exp, proj, hrf_model)
                 scan_signal[:, i] = scan_signal_tmp.reshape((len(scan_signal_tmp,)))
 
                 # Design matrix filling

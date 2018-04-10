@@ -5,7 +5,7 @@ from scipy import io as sio
 from scipy import stats
 import numpy as np
 #import decimal
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
@@ -18,158 +18,89 @@ from neural_proba import experiment
 from neural_proba import fmri
 
 # INPUTS
+true_coding_scheme_array = ['rate', 'ppc', 'dpc']
+fit_coding_scheme_array = ['rate', 'ppc', 'dpc']
+r2_mean = np.zeros((3, 3))
+noise_coeff = 0
+aqw
+for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
+    for k_fit, fit_coding_scheme in enumerate(fit_coding_scheme_array):
+        # # Properties of the voxel to be simulated
+        # true_coding_scheme = 'ppc'
+        # true_population_fraction = [1]  # one for the mean, one for the std
+        fmri_gain = 1    # Amplification of the signal
 
-# Properties of the voxel to be simulated
-true_coding_scheme = 'dpc'
-true_population_fraction = [1]  # one for the mean, one for the std
-fmri_gain = 100    # Amplification of the signal
+        # # Fitted model
+        # fit_coding_scheme = 'rate'
 
-# Fitted model
-coding_scheme = 'dpc'
+        X = np.load('X_{}.npy'.format(fit_coding_scheme))
+        y = np.load('y_{}.npy'.format(true_coding_scheme))
+        true_weights = np.load('true_weights_{}.npy'.format(true_coding_scheme))
 
-# TC related to the mean
-tc_type_mean = 'gaussian'    # Tuning curve type
-N_mean = 10    # Number of tuning curves
-t_mean = 0.05    # The best value from the previous "sum" analysis
+        ############################################################
+        # Define the seed to reproduce results from random processes
+        rand.seed(2);
+        n_stimuli = 380
+        n_blocks = 4
+        n_train = 3
+        n_test = 1
+        n_features = X[0].shape[1]
 
-# TC related to the uncertainty
-tc_type_sigma = 'gaussian'    # Tuning curve type
-N_sigma = 10    # Number of tuning curves
-t_sigma = 5e-3    # The best value from the previous "sum" analysis
+        # Noise injection
+        for block in range(n_blocks):
+            y[block] = y[block] + noise_coeff*np.random.normal(0, 1, len(y[block]))
 
-############################################################
+        # Manual z-scoring
+        X_mean = np.mean(np.concatenate(X, axis=0), axis=0)
+        X_sd = np.std(np.concatenate(X, axis=0), axis=0)
 
-# Define the seed to reproduce results from random processes
-rand.seed(2);
+        y_mean = np.mean(np.concatenate(y, axis=0))
+        y_sd = np.std(np.concatenate(y, axis=0))
 
-# Import Matlab structure containing data and defining inputs
-data_mat = sio.loadmat('data/ideal_observer_1.mat', struct_as_record=False)
+        for block in range(n_blocks):
+            y[block] = y[block] - y_mean    # Centering
+            y[block] = y[block]/y_sd    # Standardization
+            for feature in range(n_features):
+                X[block][:, feature] = X[block][:, feature]-X_mean[feature]*np.ones_like(X[block][:, feature])    # Centering
+                X[block][:, feature] = X[block][:, feature]/X_sd[feature]     # Standardization
 
-[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
+        mse = np.zeros(n_blocks)
+        r2 = np.zeros(n_blocks)
+        # Create the folds from the data
+        for block in range(n_blocks):
+            mask = [True for k in range(4)]
+            mask[block] = False
+            X_train = np.concatenate(X[mask], axis=0)
+            y_train = np.concatenate(y[mask], axis=0)
+            X_test = X[block]
+            y_test = y[block]
+            # Create linear regression object
+            regr = linear_model.LinearRegression(fit_intercept=True)
 
-#n_stimuli = p1g2_mean.shape[1]
-n_stimuli = 350
-q_mean = p1g2_mean[0, :n_stimuli]
-sigma = p1g2_sd[:n_stimuli]
-dist = p1g2_dist[:, :n_stimuli]
-# Creation of a list of simulated distributions
-simulated_distrib = [None for k in range(n_stimuli)]
-# test = np.zeros(n_stimuli)
-#x = np.linspace(0, 1, 1000, endpoint=True)
-for k in range(n_stimuli):
-    # Normalization of the distribution
-    norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-    simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
-    # test[k] = np.max(simulated_distrib[k].beta(x))
-    # if np.isinf(test[k]):
-    #     print(k)
+            # Train the model using the training set
+            regr.fit(X_train, y_train)
+            # Make predictions using the testing set
+            y_pred = regr.predict(X_test)
+            mse[block] = mean_squared_error(y_test, y_pred)
+            r2[block] = r2_score(y_test, y_pred)
 
-# We find the variance of the data in order to scale equally activity from mean and activity from uncertainty
-q_mean_sd = np.std(q_mean)    # Variance of the signal of q_mean's
-sigma_sd = np.std(sigma)    # Variance of the signal of sigma's
+        # The coefficients
+        # print('True coefficients: \n', true_weights)
+        # print('Fitted coefficients: \n', regr.coef_)
+        # The mean squared error
+        # print("Mean squared error: ", mse)
+        # # Explained variance score: 1 is perfect prediction
+        # print('Variance score:', r2)
 
-# Lower and upper bounds of the encoded summary quantity (for tuning curves)
-tc_lower_bound_mean = 0
-tc_upper_bound_mean = 1
-tc_lower_bound_sigma = np.min(sigma)-np.std(sigma)
-# we define the upper bound to be a bit away from the highest uncertainty
-tc_upper_bound_sigma = np.max(sigma)+np.std(sigma)
+        r2_mean[k_true, k_fit] = np.mean(r2[block])
 
-# Creates the tuning_curve object
-tc_mean = tuning_curve(tc_type_mean, N_mean, t_mean, tc_lower_bound_mean, tc_upper_bound_mean)
+print(r2_mean)
 
-# Creates the tuning_curve object
-tc_sigma = tuning_curve(tc_type_sigma, N_sigma, t_sigma, tc_lower_bound_sigma, tc_upper_bound_sigma)
+# fig, ax = plt.subplots()
+plt.imshow(r2_mean);
+# # Turn off tick labels
+# ax.set_yticklabels([])
+# ax.set_xticklabels([])
 
-
-# Experimental design information
-eps = 1e-5    # For floating points issues
-
-between_stimuli_duration = 1.3
-initial_time = between_stimuli_duration + eps
-n_blocks = 1
-final_time = between_stimuli_duration*(n_stimuli+1) + eps
-stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli)
-stimulus_durations = 0.01*np.ones_like(stimulus_onsets)    # Dirac-like stimuli
-
-# Creation of experiment object
-exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
-
-# fMRI information
-
-final_frame_offset = 15    # Frame recording duration after the last stimulus has been shown
-initial_frame_time = 0
-final_frame_time = exp.final_time + final_frame_offset
-dt = 0.01    # Temporal resolution of the fMRI scanner
-
-between_scans_duration = 2    # in seconds
-final_scan_offset = 10    # Scan recording duration after the last stimulus has been shown
-initial_scan_time = initial_frame_time + between_scans_duration
-final_scan_time = exp.final_time + final_scan_offset
-scan_times = np.arange(initial_scan_time, final_scan_time, between_scans_duration)
-
-# Creation of fmri object
-simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
-
-frame_times = simu_fmri.frame_times
-
-# Computes the BOLD signal
-# Tuning curves for each coding scheme
-if true_coding_scheme == 'rate':
-    true_tc = []
-elif true_coding_scheme == 'ppc':
-    true_tc = [tc_mean, tc_sigma]
-elif true_coding_scheme == 'dpc':
-    true_tc = [tc_mean]
-
-if coding_scheme == 'rate':
-    tc = []
-elif coding_scheme == 'ppc':
-    tc = [tc_mean, tc_sigma]
-elif coding_scheme == 'dpc':
-    tc = [tc_mean]
-
-# Creation of the voxel
-true_voxel = voxel(true_coding_scheme, true_population_fraction, true_tc)
-
-# The amplitudes of the neural signal
-true_activity = true_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd, use_high_integration_resolution=False)
-hrf_model = 'spm'    # No fancy hrf model
-
-# BOLD signal
-signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, fmri_gain)
-
-
-# Compute the response vector
-y = scan_signal
-y = stats.zscore(y)
-# Compute the regressors for the selected coding scheme
-X = simu_fmri.get_regressor(exp, coding_scheme, tc)
-X = stats.zscore(X)
-
-n_train = len(y) - 100
-
-np.save('y_ppc.npy', y)
-np.save('X_ppc.npy', X)
-
-X_train = X[:n_train, :]
-y_train = y[:n_train]
-
-X_test = X[n_train:, :]
-y_test = y[n_train:]
-
-# Create linear regression object
-regr = linear_model.LinearRegression(fit_intercept=False)
-
-# Train the model using the training set
-regr.fit(X_train, y_train)
-
-# Make predictions using the testing set
-y_pred = regr.predict(X_test)
-
-# The coefficients
-print('Coefficients: \n', regr.coef_)
-# The mean squared error
-print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
-# Explained variance score: 1 is perfect prediction
-print('Variance score: %.2f' % r2_score(y_test, y_pred))
+plt.colorbar()
+plt.show()

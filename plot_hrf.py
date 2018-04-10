@@ -33,7 +33,7 @@ duration = [None]*n_events
 # One event every second
 onset = np.linspace(1, n_events, n_events)
 amplitude = np.ones(n_events)
-duration = np.ones(n_events)*0.2
+duration = np.ones(n_events)*10
 
 stim = np.zeros_like(frame_times)
 for k in range(n_events):
@@ -47,7 +47,7 @@ fig = plt.figure(figsize=(9, 4))
 for i, hrf_model in enumerate(hrf_models):
     signal, name = hemodynamic_models.compute_regressor(
         exp_condition, hrf_model, frame_times, con_id='main',
-        oversampling=16)
+        oversampling=16, fir_delays=np.array([1., 2.]))
 
     plt.subplot(1, 3, i + 1)
     plt.fill(frame_times, stim, 'k', alpha=.5, label='stimulus')
