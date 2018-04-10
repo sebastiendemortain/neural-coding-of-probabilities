@@ -1,3 +1,5 @@
 #ignore the PyCharm files
 *.idea
 data
+plot_hrf.py
+__pychache__

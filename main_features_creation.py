@@ -175,33 +175,6 @@ for k_fold in range(0, 4):
     X[k_fold] = simu_fmri.get_regressor(exp, coding_scheme, true_tc)
     # X = stats.zscore(X)
 
-np.save('y_{}.npy'.format(true_coding_scheme), y)
-np.save('X_{}.npy'.format(true_coding_scheme), X)
-np.save('true_weights_{}'.format(true_coding_scheme), true_voxel.weights)
-
-# n_train = len(y) - 10
-#
-# # np.save('y_ppc.npy', y)
-# # np.save('X_ppc.npy', X)
-#
-# X_train = X[:n_train, :]
-# y_train = y[:n_train]
-#
-# X_test = X[n_train:, :]
-# y_test = y[n_train:]
-#
-# # Create linear regression object
-# regr = linear_model.LinearRegression(fit_intercept=False)
-#
-# # Train the model using the training set
-# regr.fit(X_train, y_train)
-# # Make predictions using the testing set
-# y_pred = regr.predict(X_test)
-#
-# # The coefficients
-# print('True coefficients: \n', fmri_gain*true_voxel.weights)
-# print('Fitted coefficients: \n', regr.coef_)
-# # The mean squared error
-# print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
-# # Explained variance score: 1 is perfect prediction
-# print('Variance score: %.2f' % r2_score(y_test, y_pred))
+np.save('data/simu/y_{}.npy'.format(true_coding_scheme), y)
+np.save('data/simu/X_{}.npy'.format(true_coding_scheme), X)
+np.save('data/simu/true_weights_{}'.format(true_coding_scheme), true_voxel.weights)
