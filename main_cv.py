@@ -22,7 +22,7 @@ true_coding_scheme_array = ['rate', 'ppc', 'dpc']
 fit_coding_scheme_array = ['rate', 'ppc', 'dpc']
 r2_mean = np.zeros((3, 3))
 noise_coeff = 0
-aqw
+
 for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
     for k_fit, fit_coding_scheme in enumerate(fit_coding_scheme_array):
         # # Properties of the voxel to be simulated
@@ -33,18 +33,23 @@ for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
         # # Fitted model
         # fit_coding_scheme = 'rate'
 
-        X = np.load('X_{}.npy'.format(fit_coding_scheme))
-        y = np.load('y_{}.npy'.format(true_coding_scheme))
-        true_weights = np.load('true_weights_{}.npy'.format(true_coding_scheme))
+        X = np.load('data/simu/X_{}.npy'.format(fit_coding_scheme))
+        y = np.load('data/simu/y_{}.npy'.format(true_coding_scheme))
+        true_weights = np.load('data/simu/true_weights_{}.npy'.format(true_coding_scheme))
 
         ############################################################
         # Define the seed to reproduce results from random processes
         rand.seed(2);
         n_stimuli = 380
-        n_blocks = 4
+        n_blocks = 3
         n_train = 3
         n_test = 1
         n_features = X[0].shape[1]
+
+        # Remove the annoying element
+        mask = [True, False, True, True]
+        y = y[mask, :]
+        X = X[mask, :, :]
 
         # Noise injection
         for block in range(n_blocks):
@@ -68,7 +73,7 @@ for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
         r2 = np.zeros(n_blocks)
         # Create the folds from the data
         for block in range(n_blocks):
-            mask = [True for k in range(4)]
+            mask = [True for k in range(n_blocks)]
             mask[block] = False
             X_train = np.concatenate(X[mask], axis=0)
             y_train = np.concatenate(y[mask], axis=0)
@@ -83,7 +88,7 @@ for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
             y_pred = regr.predict(X_test)
             mse[block] = mean_squared_error(y_test, y_pred)
             r2[block] = r2_score(y_test, y_pred)
-
+            print(r2[block])
         # The coefficients
         # print('True coefficients: \n', true_weights)
         # print('Fitted coefficients: \n', regr.coef_)
@@ -92,15 +97,36 @@ for k_true, true_coding_scheme in enumerate(true_coding_scheme_array):
         # # Explained variance score: 1 is perfect prediction
         # print('Variance score:', r2)
 
-        r2_mean[k_true, k_fit] = np.mean(r2[block])
+        r2_mean[k_true, k_fit] = np.mean(r2)
 
 print(r2_mean)
 
-# fig, ax = plt.subplots()
-plt.imshow(r2_mean);
-# # Turn off tick labels
-# ax.set_yticklabels([])
-# ax.set_xticklabels([])
+column_labels = ['Rate', 'PPC', 'DPC']
+row_labels = ['True rate', 'True PPC', 'True DPC']
+data = r2_mean
 
-plt.colorbar()
+fig, ax = plt.subplots()
+heatmap = ax.pcolor(data, cmap=plt.cm.Blues, vmin=0, vmax=1)
+
+# put the major ticks at the middle of each cell
+ax.set_xticks(np.arange(data.shape[1]) + 0.5, minor=False)
+ax.set_yticks(np.arange(data.shape[0]) + 0.5, minor=False)
+
+# want a more natural, table-like display
+ax.invert_yaxis()
+ax.xaxis.tick_top()
+
+ax.set_xticklabels(column_labels, minor=False)
+ax.set_yticklabels(row_labels, minor=False)
+cbar = fig.colorbar(heatmap, ticks=[0, 1])
 plt.show()
+
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# plt.imshow(r2_mean);
+# # Turn off tick labels
+# ax.set_xticklabels([' ', 'True rate', ' ', 'True PPC', ' ', 'True DPC'])
+# ax.set_yticklabels(['Rate', 'PPC', 'DPC'])
+#
+# plt.colorbar()
+# plt.show()

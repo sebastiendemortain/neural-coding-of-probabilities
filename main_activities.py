@@ -28,18 +28,22 @@ plot_all_range = True
 #########################################
 
 # Import Matlab structure containing data and defining inputs
-data_mat = sio.loadmat('data/ideal_observer_1.mat', struct_as_record=False)
+#data_mat = sio.loadmat('data/ideal_observer_1.mat', struct_as_record=False)
 
-[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
+[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(1, 1, 380, 'HMM')
+
+p1g2_dist = p1g2_dist[0]
+p1g2_mean = p1g2_mean[0]
+p1g2_sd = p1g2_sd[0]
 
 ### Generate equivalent beta distribution
 
 # DISTRIBUTION SIMULATED IN ORDER TO PLOT THE SHAPE OF THE SIGNAL
 
 # Generate data from beta distributions samples from means and std
-n_mean = 10    # Number of generated means
-n_sigma = 10    # Number of generated standard deviations
-q_mean = np.linspace(0.2, 0.8, n_mean)
+n_mean = 30    # Number of generated means
+n_sigma = 30    # Number of generated standard deviations
+q_mean = np.linspace(0.15, 0.85, n_mean)
 sigma = np.linspace(np.min(p1g2_sd), np.mean(p1g2_sd), n_sigma)    # We don't go to the max to have bell shaped beta
 
 # Creation of a list of simulated distributions
@@ -88,9 +92,9 @@ sigma_sd = np.std(sigma)    # Variance of the signal of sigma's
 # Lower and upper bounds of the encoded summary quantity (for tuning curves)
 tc_lower_bound_mean = 0
 tc_upper_bound_mean = 1
-tc_lower_bound_sigma = np.min(sigma)-np.std(sigma)
+tc_lower_bound_sigma = 0.04
 # we define the upper bound to be a bit away from the highest uncertainty
-tc_upper_bound_sigma = np.max(sigma)+np.std(sigma)
+tc_upper_bound_sigma = 0.35
 
 ### 1) Rate coding simulation
 
@@ -120,7 +124,7 @@ tc_mean = tuning_curve(tc_type_mean, N_mean, t_mean, tc_lower_bound_mean, tc_upp
 # TC related to the uncertainty
 tc_type_sigma = 'gaussian'    # Tuning curve type
 N_sigma = 10    # Number of tuning curves
-t_sigma = 5e-3    # The best value from the previous "sum" analysis
+t_sigma = 2e-2    # The best value from the previous "sum" analysis
 # Creates the tuning_curve object
 tc_sigma = tuning_curve(tc_type_sigma, N_sigma, t_sigma, tc_lower_bound_sigma, tc_upper_bound_sigma)
 
@@ -149,7 +153,7 @@ dpc_activity = dpc_voxel.generate_activity(simulated_distrib, use_high_integrati
 ### PLOTS
 
 # Plot the signal for different voxel types and different distributions
-k_jump = 2    # To skip some curves
+k_jump = 6    # To skip some curves
 
 fig = plt.figure()
 
@@ -181,7 +185,6 @@ ax_rate_mean.set_ylabel('Signal intensity')
 ax_rate_mean.set_title('Rate coding signal')
 ax_rate_mean.legend()
 ax_rate_mean.get_xaxis().set_ticks([])
-#ax_rate_mean.tick_params(axis='x', which='both', top='off', bottom='off', labelbottom='off')
 
 ax_rate_sd = fig.add_subplot(422)
 for k_mean in range(0,n_mean,k_jump):
@@ -255,6 +258,7 @@ ax_frac_sd.set_xlim([tc_lower_bound_sigma, tc_upper_bound_sigma])
 plt.show()
 
 
+
 # #Just plot the activity
 # if not plot_all_range:
 #     fig = plt.figure()
@@ -265,65 +269,65 @@ plt.show()
 
 #############
 
-# # Plot the optimal tuning curves
-#
-# fig = plt.figure()
-# x = np.linspace(tc_lower_bound_mean,tc_upper_bound_mean,1000)
-# plt.subplot(211)
-# for i in range(0, N_mean):
-#     plt.plot(x, tc_mean.f(x, i))
-#
-# plt.xlabel('Preferred probability')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mean.N)+')')
-#
-# plt.subplot(212)
-# x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
-# for i in range(0, N_sigma):
-#     plt.plot(x, tc_sigma.f(x, i))
-#
-# plt.xlabel('Preferred standard deviation')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
-# plt.show()
+# Plot the optimal tuning curves
+
+fig = plt.figure()
+x = np.linspace(tc_lower_bound_mean,tc_upper_bound_mean,1000)
+plt.subplot(211)
+for i in range(0, N_mean):
+    plt.plot(x, tc_mean.f(x, i))
+
+plt.xlabel('Preferred probability')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mean.N)+')')
+
+plt.subplot(212)
+x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
+for i in range(0, N_sigma):
+    plt.plot(x, tc_sigma.f(x, i))
+
+plt.xlabel('Preferred standard deviation')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+plt.show()
 
 
-# # Find the optimal tuning curves' standard deviation for fixed N : we consider the lowest std such that the sum over the TC is constant
-#
-# tested_t = [0.01,0.03,0.05,0.08,0.1,0.2,0.5]    # The different std
-# x = np.linspace(tc_lower_bound_mean, tc_upper_bound_mean, 1000)
-# tc_sum = np.zeros([len(tested_t), 1000])    # Initialization of the different TC sum's
-#
-# for k_t in range(len(tested_t)):
-#     tc = tuning_curve.tuning_curve(tc_type_mean, N_mean, tested_t[k_t], tc_lower_bound_mean, tc_upper_bound_mean)
-#     for i in range(N_mean):
-#         tc_sum[k_t, :] += tc.f(x, i)
-#
-# fig = plt.figure()
-# plt.subplot(211)
-# for k_t in range(len(tested_t)):
-#     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
-#
-# plt.xlabel('Probability')
-# plt.ylabel('Sum over the tuning curves')
-# plt.legend()
-#
-# tested_t = [2e-3, 3e-3, 5e-3, 6e-3, 7e-3, 8e-3, 0.01]    # The different std
-# x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
-# tc_sum = np.zeros([len(tested_t), 1000])
-#
-# for k_t in range(len(tested_t)):
-#     tc = tuning_curve.tuning_curve(tc_type_sigma, N_sigma, tested_t[k_t], tc_lower_bound_sigma, tc_upper_bound_sigma)
-#     for i in range(N_sigma):
-#         tc_sum[k_t, :] += tc.f(x, i)
-#
-# plt.subplot(212)
-# for k_t in range(len(tested_t)):
-#     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
-#
-# plt.xlabel('Standard deviation')
-# plt.ylabel('Sum over the tuning curves')
-# plt.legend()
-# plt.show()
+# Find the optimal tuning curves' standard deviation for fixed N : we consider the lowest std such that the sum over the TC is constant
+
+tested_t = [0.01,0.03,0.05,0.08,0.1]    # The different std
+x = np.linspace(tc_lower_bound_mean, tc_upper_bound_mean, 1000)
+tc_sum = np.zeros([len(tested_t), 1000])    # Initialization of the different TC sum's
+
+for k_t in range(len(tested_t)):
+    tc = tuning_curve(tc_type_mean, N_mean, tested_t[k_t], tc_lower_bound_mean, tc_upper_bound_mean)
+    for i in range(N_mean):
+        tc_sum[k_t, :] += tc.f(x, i)
+
+fig = plt.figure()
+plt.subplot(211)
+for k_t in range(len(tested_t)):
+    plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
+
+plt.xlabel('Probability')
+plt.ylabel('Sum over the tuning curves')
+plt.legend()
+
+tested_t = [5e-3, 1e-2, 2e-2, 3e-2, 5e-2]    # The different std
+x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
+tc_sum = np.zeros([len(tested_t), 1000])
+
+for k_t in range(len(tested_t)):
+    tc = tuning_curve(tc_type_sigma, N_sigma, tested_t[k_t], tc_lower_bound_sigma, tc_upper_bound_sigma)
+    for i in range(N_sigma):
+        tc_sum[k_t, :] += tc.f(x, i)
+
+plt.subplot(212)
+for k_t in range(len(tested_t)):
+    plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
+
+plt.xlabel('Standard deviation')
+plt.ylabel('Sum over the tuning curves')
+plt.legend()
+plt.show()
 
 ##################

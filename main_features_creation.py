@@ -1,11 +1,12 @@
 import os
 import scipy
-import random as rand
 from scipy import io as sio
+import random as rand
 from scipy import stats
 import numpy as np
 #import decimal
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import pickle
 
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
@@ -42,13 +43,49 @@ t_sigma = 5e-3    # The best value from the previous "sum" analysis
 # Define the seed to reproduce results from random processes
 rand.seed(2);
 
-# Define all the distributional elements from the first distribution
-
-data_mat = sio.loadmat('data/ideal_observer_{}.mat'.format(1), struct_as_record=False)
-
-[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
-
+# Define the subject and block modalities
+n_subjects = 20
+n_blocks = 4
+distrib_type = 'HMM'
 n_stimuli = 380
+
+# load the data
+[p1g2_dist_array, p1g2_mean_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_blocks, n_stimuli,
+                                                                                      distrib_type)
+
+# Initialize the design matrix and the response vector
+X = [[None for j in range(n_subjects)] for i in range(n_blocks)]
+y = [[None for j in range(n_subjects)] for i in range(n_blocks)]
+
+subject = 0
+block = 0
+
+p1g2_dist = p1g2_dist_array[subject][block]
+p1g2_mean = p1g2_mean_array[subject][block]
+p1g2_sd = p1g2_sd_array[subject][block]
+
+# Plot the distribution over means and sd
+# Merge the data all together
+all_q_mean = np.concatenate(p1g2_mean_array, axis=2)
+all_q_mean = np.reshape(all_q_mean, (n_subjects*n_blocks*n_stimuli,))
+
+all_sigma = np.concatenate(p1g2_sd_array, axis=2)
+all_sigma = np.reshape(all_sigma, (n_subjects*n_blocks*n_stimuli,))
+
+plt.figure()
+# hist_q_mean = np.histogram(all_q_mean, bin=100)
+# hist_sigma = np.histogram(all_sigma, bin=100)
+# x_q_mean = np.linspace(0, 1, len(hist_q_mean))
+# x_sigma = np.linspace(np.min(all_sigma), np.max(all_sigma), len(hist_sigma))
+ax_q_mean = plt.subplot(211)
+ax_q_mean.hist(all_q_mean, bins=100)
+ax_q_mean.set_xlabel('Probability')
+
+ax_sigma = plt.subplot(212)
+ax_sigma.hist(all_sigma, bins=100)
+ax_sigma.set_xlabel('Standard deviation')
+plt.show()
+
 q_mean = p1g2_mean[0, :n_stimuli]
 sigma = p1g2_sd[:n_stimuli]
 dist = p1g2_dist[:, :n_stimuli]
@@ -130,50 +167,47 @@ elif true_coding_scheme == 'dpc':
 
 # Creation of the voxel
 true_voxel = voxel(true_coding_scheme, true_population_fraction, true_tc)
+# pickle.dump(true_voxel, output, pickle.HIGHEST_PROTOCOL)
 
 # Now we compute the activity for each block
-
-y = [None for i in range(4)]
-X = [None for i in range(4)]
-
 # Import Matlab structure containing data and defining inputs
-for k_fold in range(0, 4):
-    data_mat = sio.loadmat('data/ideal_observer_{}.mat'.format(k_fold+1), struct_as_record=False)
+data_mat = sio.loadmat('data/ideal_observer_{}.mat'.format(k_fold+1), struct_as_record=False)
 
-    [p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
+[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
 
-    q_mean = p1g2_mean[0, :n_stimuli]
-    sigma = p1g2_sd[:n_stimuli]
-    dist = p1g2_dist[:, :n_stimuli]
-    # Creation of a list of simulated distributions
-    simulated_distrib = [None for k in range(n_stimuli)]
-    # test = np.zeros(n_stimuli)
-    #x = np.linspace(0, 1, 1000, endpoint=True)
-    for k in range(n_stimuli):
-        # Normalization of the distribution
-        norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-        simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
-        # test[k] = np.max(simulated_distrib[k].beta(x))
-        # if np.isinf(test[k]):
-        #     print(k)
+q_mean = p1g2_mean[0, :n_stimuli]
+sigma = p1g2_sd[:n_stimuli]
+dist = p1g2_dist[:, :n_stimuli]
+# Creation of a list of simulated distributions
+simulated_distrib = [None for k in range(n_stimuli)]
+# test = np.zeros(n_stimuli)
+#x = np.linspace(0, 1, 1000, endpoint=True)
+for k in range(n_stimuli):
+    # Normalization of the distribution
+    norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
+    simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
+    # test[k] = np.max(simulated_distrib[k].beta(x))
+    # if np.isinf(test[k]):
+    #     print(k)
 
-    # Creation of experiment object : all the same for the different dataset
-    exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
+# Creation of experiment object : all the same for the different dataset
+exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
 
-    # The amplitudes of the neural signal
-    true_activity = true_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd,
-                                                 use_high_integration_resolution=False)
-    hrf_model = 'spm'    # No fancy hrf model
+# The amplitudes of the neural signal
+true_activity = true_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd,
+                                             use_high_integration_resolution=False)
 
-    # BOLD signal
-    signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, fmri_gain)
+hrf_model = 'spm'    # No fancy hrf model
 
-    # Compute the response vector
-    y[k_fold] = scan_signal
-    # y = stats.zscore(y)
-    # Compute the regressors for the selected coding scheme
-    X[k_fold] = simu_fmri.get_regressor(exp, coding_scheme, true_tc)
-    # X = stats.zscore(X)
+# BOLD signal
+signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, fmri_gain)
+
+# Compute the response vector
+y[k_fold] = scan_signal
+# y = stats.zscore(y)
+# Compute the regressors for the selected coding scheme
+X[k_fold] = simu_fmri.get_regressor(exp, coding_scheme, true_tc)
+# X = stats.zscore(X)
 
 np.save('data/simu/y_{}.npy'.format(true_coding_scheme), y)
 np.save('data/simu/X_{}.npy'.format(true_coding_scheme), X)

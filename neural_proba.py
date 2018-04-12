@@ -4,29 +4,33 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from scipy import integrate
 from nistats import hemodynamic_models
+
 import utils
+from scipy import io as sio
+
 
 '''Related to the distribution'''
 
 
-def import_distrib_param(data_mat):
-    out = data_mat['out']
-    out_HMM = out[0, 0].HMM
+def import_distrib_param(n_subjects, n_blocks, n_stimuli, distrib_type):
 
-    # The full distribution P(1|2) (resolution of 50 values and 600 trials)
-    p1g2_dist = out_HMM[0, 0].p1g2_dist
+    # Initialization of the outputs
+    p1g2_dist_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
+    p1g2_mean_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
+    p1g2_sd_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
 
-    n_val = np.size(p1g2_dist, 0)
-    n_trial = np.size(p1g2_dist, 1)
+    data_mat = sio.loadmat('data/simu/ideal_observer_{}subjects_{}blocks_{}stimuli_HMM.mat'.format
+                           (n_subjects, n_blocks, n_stimuli, distrib_type), struct_as_record=False)
+    out = data_mat['out_io']
 
-    # The mean of this distribution
-    p1g2_mean = out_HMM[0, 0].p1g2_mean
+    for subject in range(n_subjects):
+        for block in range(n_blocks):
+                out_tmp = out[subject][block]
+                p1g2_dist_array[subject][block] = out_tmp[0, 0].p1g2_dist
+                p1g2_mean_array[subject][block] = out_tmp[0, 0].p1g2_mean
+                p1g2_sd_array[subject][block] = out_tmp[0, 0].p1g2_sd
 
-    # The standard deviation of this distribution
-    p1g2_sd = out_HMM[0, 0].p1g2_sd
-    p1g2_sd = p1g2_sd[0, :]
-
-    return [p1g2_dist, p1g2_mean, p1g2_sd]
+    return [p1g2_dist_array, p1g2_mean_array, p1g2_sd_array]
 
 
 class distrib:
