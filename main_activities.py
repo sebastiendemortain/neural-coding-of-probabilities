@@ -154,6 +154,9 @@ dpc_activity = dpc_voxel.generate_activity(simulated_distrib, use_high_integrati
 
 # Plot the signal for different voxel types and different distributions
 k_jump = 6    # To skip some curves
+ax_fontsize = 15
+xtick_fontsize = 15
+title_fontsize = 20
 
 #### BEGIN INDIVIDUAL ACTIVITIES IPLOTS ###
 
@@ -161,9 +164,9 @@ k_jump = 6    # To skip some curves
 # ax = fig.add_subplot(111)
 # for k_sigma in range(0,n_sigma,k_jump):
 #     ax.plot(x_mu, rate_activity[:, k_sigma], label='sigma='+str(round(sigma[k_sigma],2)))
-# ax.set_xlabel('Probability', fontsize=15)
-# ax.tick_params(labelsize=15)
-# ax.set_ylabel('Neural activity', fontsize=15)
+# ax.set_xlabel('Probability', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
 # ax.set_title('Rate',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -181,9 +184,9 @@ k_jump = 6    # To skip some curves
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
 #     ax.plot(x_sigma, rate_activity[k_mu, :], label='mu='+str(round(mu[k_mu],2)))
-# ax.set_xlabel('Uncertainty', fontsize=15)
-# ax.tick_params(labelsize=15)
-# ax.set_ylabel('Neural activity', fontsize=15)
+# ax.set_xlabel('Uncertainty', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
 # ax.set_title('Rate',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -201,9 +204,9 @@ k_jump = 6    # To skip some curves
 # ax = fig.add_subplot(111)
 # for k_sigma in range(0,n_sigma,k_jump):
 #     ax.plot(x_mu, ppc_activity[:, k_sigma], label='sigma='+str(round(sigma[k_sigma],2)))
-# ax.set_xlabel('Probability', fontsize=15)
-# ax.tick_params(labelsize=15)
-# ax.set_ylabel('Neural activity',fontsize=15)
+# ax.set_xlabel('Probability', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
+# ax.set_ylabel('Neural activity',fontsize=xtick_fontsize)
 # ax.set_title('PPC',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -220,9 +223,9 @@ k_jump = 6    # To skip some curves
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
 #     ax.plot(x_sigma, ppc_activity[k_mu, :], label='mu='+str(round(mu[k_mu],2)))
-# ax.set_xlabel('Uncertainty', fontsize=15)
-# ax.tick_params(labelsize=15)
-# ax.set_ylabel('Neural activity',fontsize=15)
+# ax.set_xlabel('Uncertainty', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
+# ax.set_ylabel('Neural activity',fontsize=xtick_fontsize)
 # ax.set_title('PPC',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -240,8 +243,8 @@ k_jump = 6    # To skip some curves
 # for k_sigma in range(0,n_sigma,k_jump):
 #     ax.plot(x_mu, dpc_activity[:, k_sigma], label='sigma='+str(round(sigma[k_sigma],2)))
 # ax.set_ylabel('Neural activity')
-# ax.set_xlabel('Probability', fontsize=15)
-# ax.tick_params(labelsize=15)
+# ax.set_xlabel('Probability', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
 # ax.set_title('DPC',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -258,9 +261,9 @@ k_jump = 6    # To skip some curves
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
 #     ax.plot(x_sigma, dpc_activity[k_mu, :], label='mu='+str(round(mu[k_mu],2)))
-# ax.set_xlabel('Uncertainty', fontsize=15)
-# ax.tick_params(labelsize=15)
-# ax.set_ylabel('Neural activity',fontsize=15)
+# ax.set_xlabel('Uncertainty', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
+# ax.set_ylabel('Neural activity',fontsize=xtick_fontsize)
 # ax.set_title('DPC',fontsize=20)
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
@@ -283,9 +286,9 @@ k_jump = 6    # To skip some curves
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
 # ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-# ax.set_xlabel('Probability', fontsize=15)
-# ax.set_ylabel('Neural fraction', fontsize=15)
-# ax.tick_params(labelsize=15)
+# ax.set_xlabel('Probability', fontsize=xtick_fontsize)
+# ax.set_ylabel('Neural fraction', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
 # ax.set_title('Mixture in this voxel', fontsize=20)
 # plt.savefig('output/figures/mixture_mu.png', bbox_inches='tight')
 #
@@ -300,9 +303,9 @@ k_jump = 6    # To skip some curves
 # x0,x1 = ax.get_xlim()
 # y0,y1 = ax.get_ylim()
 # ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-# ax.set_ylabel('Neural fraction', fontsize=15)
-# ax.set_xlabel('Uncertainty', fontsize=15)
-# ax.tick_params(labelsize=15)
+# ax.set_ylabel('Neural fraction', fontsize=xtick_fontsize)
+# ax.set_xlabel('Uncertainty', fontsize=xtick_fontsize)
+# ax.tick_params(labelsize=xtick_fontsize)
 # ax.set_title('Mixture in this voxel', fontsize=20)
 # plt.savefig('output/figures/mixture_sigma.png', bbox_inches='tight')
 #
@@ -310,46 +313,217 @@ k_jump = 6    # To skip some curves
 
 ### END INDIVIDUAL PLOTS ###
 
-### BEGINNING OF VULGARIZATION PLOTS ###
+# ### BEGINNING OF RATE VULGARIZATION PLOTS ###
+#
+# high = 0.9
+# low = 0.1
+# width = 0.5
+# low_low = np.array([low, low])
+# low_high = np.array([low, high])
+# high_low = np.array([high, low])
+# high_high = np.array([high, high])
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, low_low, width=width, color=['black', 'grey'])
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/low_low.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, high_low, width=width, color=['black', 'grey'])
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/high_low.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, high_high, width=width, color=['black', 'grey'])
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/high_high.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, low_high, width=width, color=['black', 'grey'])
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
 
-high = 0.7
-low = 0.1
-width = 0.5
-low_low = np.array([low, low])
-low_high = np.array([low, high])
-high_low = np.array([high, low])
-high_high = np.array([high, high])
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/low_high.png', bbox_inches='tight')
+#
+# plt.show()
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-x = np.linspace(0, 1, 2, endpoint=True)
-ax.bar(x, low_low, width=width, color=['black', 'grey'])
-x0,x1 = ax.get_xlim()
-y0,y1 = ax.get_ylim()
-ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-ax.set_ylabel('Neural activity', fontsize=15)
-ax.set_title('Mixture in this voxel', fontsize=20)
+### END OF RATE VULGARIZATION PLOT
 
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['left'].set_visible(False)
+### BEGINNING OF PPC VULGARIZATION PLOT
 
-plt.savefig('output/figures/low_low.png', bbox_inches='tight')
+# mu_point = 0.4
+# tc_mu_point = np.zeros(10)
+# sigma_point = 0.27
+# tc_sigma_point = np.zeros(10)
+#
+# color_point = [None for i in range(10)]
+# dash_line = [None for i in range(10)]
+#
+#
+# fig = plt.figure()
+# x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu,1000)
+# ax = plt.subplot(111)
+# for i in range(0, N_mu):
+#     p = ax.plot(x, tc_mu.f(x, i), label='Neuron '+str(i+1))
+#     tc_mu_point[i] = tc_mu.f(mu_point, i)
+#     color_point[i] = p[0].get_color()
+#     dash_line[i] = ax.plot(mu_point*np.ones(10), np.linspace(0, tc_mu_point[i], 10), color=color_point[i],
+#                            linestyle='--')
+# ax.scatter([mu_point*np.ones(10)], [np.reshape(tc_mu_point, (10,))], color=color_point)
+#
+# x0,x1 = ax.get_xlim()
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(0.5*abs(x1-x0)/abs(y1-y0))
+#
+# plt.xlabel('Probability',fontsize=xtick_fontsize)
+# plt.ylabel('Neural activity',fontsize=xtick_fontsize)
+# chartBox = ax.get_position()
+# ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
+# ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
+#
+# #plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
+# plt.savefig('output/figures/tc_mu.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+#
+# ax = plt.subplot(111)
+# x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma, 1000)
+# for i in range(0, N_sigma):
+#     plt.plot(x, tc_sigma.f(x, i), label='Neuron '+str(i+1))
+#     tc_sigma_point[i] = tc_sigma.f(sigma_point, i)
+#     dash_line[i] = ax.plot(sigma_point*np.ones(10), np.linspace(0, tc_sigma_point[i], 10), color=color_point[i],
+#                            linestyle='--')
+# ax.scatter([sigma_point*np.ones(10)], [np.reshape(tc_sigma_point, (10,))], color=color_point)
+#
+# x0,x1 = ax.get_xlim()
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(0.5*abs(x1-x0)/abs(y1-y0))
+#
+# plt.xlabel('Preferred standard deviation', fontsize=xtick_fontsize)
+# plt.ylabel('Neural activity', fontsize=xtick_fontsize)
+# # plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+# chartBox = ax.get_position()
+# ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
+# ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
+# plt.savefig('output/figures/tc_sigma.png', bbox_inches='tight')
+#
+# plt.show()
+#
+#
+# width = 0.3
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Neuron '+str(i+1) for i in range(10)]
+# ax.bar(x, tc_mu_point, width=width, color=color_point)
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/color_mu.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Neuron '+str(i+1) for i in range(10)]
+# ax.bar(x, tc_sigma_point, width=width, color=color_point)
+# x0,x1 = ax.get_xlim()
+# ax.set_ylim(0, 1)
+# y0,y1 = ax.get_ylim()
+# ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+# ax.set_ylabel('Neural activity', fontsize=xtick_fontsize)
+#
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/color_sigma.png', bbox_inches='tight')
+#
+# plt.show()
+#
 
-labels = [item.get_text() for item in ax.get_xticklabels()]
-labels[1] = 'Probability neuron'
-labels[2] = ''
-labels[3] = 'Uncertainty neuron'
+### END OF PPC VULGARIZATION PLOT
 
-ax.set_xticklabels(labels)
-label = ax.yaxis.get_major_ticks()[2].label
-label.set_fontsize(15)
-plt.xticks(rotation=45)
-ax.get_yaxis().set_ticks([])
+### BEGINNING OF DPC VULGARIZATION PLOT
 
-plt.show()
 
-a=1
+
+
+### END OF DPC VULGARIZATION PLOT
+
 
 ### BEGIN ALL ACTIVITIES ON SAME FIGURES ###
 
