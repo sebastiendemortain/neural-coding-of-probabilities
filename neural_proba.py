@@ -12,23 +12,22 @@ from scipy import io as sio
 '''Related to the distribution'''
 
 
-def import_distrib_param(n_subjects, n_blocks, n_stimuli, distrib_type):
+def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
 
     # Initialization of the outputs
-    p1g2_dist_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
-    p1g2_mu_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
-    p1g2_sd_array = [[None for j in range(n_blocks)] for i in range(n_subjects)]
+    p1g2_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    p1g2_mu_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    p1g2_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
 
-    data_mat = sio.loadmat('data/simu/ideal_observer_{}subjects_{}blocks_{}stimuli_HMM.mat'.format
-                           (n_subjects, n_blocks, n_stimuli, distrib_type), struct_as_record=False)
+    data_mat = sio.loadmat('data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions, n_stimuli, distrib_type), struct_as_record=False)
     out = data_mat['out_io']
 
     for subject in range(n_subjects):
-        for block in range(n_blocks):
-                out_tmp = out[subject][block]
-                p1g2_dist_array[subject][block] = out_tmp[0, 0].p1g2_dist
-                p1g2_mu_array[subject][block] = out_tmp[0, 0].p1g2_mean
-                p1g2_sd_array[subject][block] = out_tmp[0, 0].p1g2_sd
+        for session in range(n_sessions):
+                out_tmp = out[subject][session]
+                p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
+                p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
+                p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
 
     return [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array]
 
@@ -37,8 +36,8 @@ class distrib:
 
     '''This class specifies attributes of a specific distribution'''
 
-    def __init__(self, q_mu, sigma, dist = []):
-        self.mean = q_mu    # Mean of the distribution
+    def __init__(self, mu, sigma, dist = []):
+        self.mean = mu    # Mean of the distribution
         self.sd = sigma    # Standard deviation of the distribution
         self.dist = dist    # Distribution itself (used sometimes for DPC)
         self.a = ((1-self.mean)/self.sd**2-1/self.mean)*self.mean**2    # First parameter of to build the beta distribution
@@ -193,6 +192,34 @@ class tuning_curve:
                 # a=1
         return proj
 
+def get_population_fraction(scheme, population_sparsity_exp = 1):
+    if (scheme.find('ppc')!=-1 or scheme.find('rate')!=-1):
+        n_population = 2  # One population for the mean, one for sigma
+        population_fraction = np.zeros(n_population)
+        population_fraction[0] = rand.uniform(0, 1) ** population_sparsity_exp
+        population_fraction[1] = 1 - population_fraction[0]
+    elif scheme.find('dpc')!=-1:  # DPC case
+        population_fraction = np.array([1])  # DPC contains only one population
+    else:
+        return
+    return population_fraction
+
+def get_subpopulation_fraction(scheme, n_population, n_subpopulation, subpopulation_sparsity_exp = 1):
+    # Fraction of each neural population
+    subpopulation_fraction = np.zeros([n_population, n_subpopulation])
+    n_neuron = np.zeros([n_population, n_subpopulation])  # Number of neuron per subpopulation
+    n_total_neuron = np.zeros(n_population)
+    for pop in range(n_population):
+        for subpop in range(n_subpopulation):
+            # Number of neuron per subpopulation controlled by a sparsity exponent
+            n_neuron[pop, subpop] = (rand.uniform(0,1)) ** subpopulation_sparsity_exp
+        n_total_neuron[pop] = np.sum(n_neuron[pop, :])
+    for pop in range(n_population):
+        for subpop in range(n_subpopulation):
+            # Fraction of neuron for each population. It sums up to 1 over each subpopulation
+            subpopulation_fraction[pop, subpop] = n_neuron[pop, subpop] / n_total_neuron[pop]
+
+    return subpopulation_fraction
 
 class voxel:
 
@@ -204,41 +231,13 @@ class voxel:
     neural_gain = 1
 
     # Initialization of the attributes of the voxel object
-    def __init__(self, coding_scheme, population_fraction, tc = [], sparsity_exp = 1):
+    def __init__(self, coding_scheme, population_fraction, subpopulation_fraction, tc = []):
         self.coding_scheme = coding_scheme   # the type of coding scheme
         self.population_fraction = population_fraction
-        self.n_population = len(self.population_fraction)    # number of independent neural populations
-        self.sparsity_exp = sparsity_exp    # Exponent controlling the sparsity of the neuron fraction
-
-        self.tuning_curve = tc
-        # If Probabilistic population code or distributional population code, we define one tuning curves' list
-        if self.coding_scheme == 'ppc':
-            for pop in range(self.n_population):
-                self.tuning_curve[pop] = tc[pop]
-            # Number of neurons within one population (shall be the same for all populations of PPC) : number of TC
-            self.n_subpopulation = self.tuning_curve[0].N
-        elif self.coding_scheme == 'dpc':
-            for pop in range(self.n_population):
-                self.tuning_curve[pop] = tc[pop]
-            self.n_subpopulation = self.tuning_curve[0].N    # this is the number of tuning curve
-        elif self.coding_scheme == 'rate':
-            self.n_subpopulation = 1    # By definition of rate coding
-
-        # Fraction of each neural population
-        subpopulation_fraction = np.zeros([self.n_population, self.n_subpopulation])
-        n_neuron = np.zeros([self.n_population, self.n_subpopulation])    # Number of neuron per subpopulation
-        n_total_neuron = np.zeros(self.n_population)
-        for pop in range(self.n_population):
-            for subpop in range(self.n_subpopulation):
-                # Number of neuron per subpopulation controlled by a sparsity exponent
-                n_neuron[pop, subpop] = (rand.randrange(self.n_subpopulation)+1)**sparsity_exp
-            n_total_neuron[pop] = np.sum(n_neuron[pop, :])
-        for pop in range(self.n_population):
-            for subpop in range(self.n_subpopulation):
-                # Fraction of neuron for each population. It sums up to 1 over each subpopulation
-                subpopulation_fraction[pop, subpop] = n_neuron[pop, subpop]/n_total_neuron[pop]
-
         self.subpopulation_fraction = subpopulation_fraction
+        self.n_population = len(self.population_fraction)    # number of independent neural populations
+        self.n_subpopulation = len(self.subpopulation_fraction[0])
+        self.tuning_curve = tc
         self.weights = np.zeros(
             (self.n_population, self.n_subpopulation))  # the weights in the activity linear combination
         for pop in range(self.n_population):
@@ -247,7 +246,7 @@ class voxel:
                                             *self.population_fraction[pop]*self.subpopulation_fraction[pop, subpop]
 
     # Neural activity given one distribution
-    def generate_activity(self, distrib_array, q_mu_sd=np.nan, sigma_sd=np.nan,
+    def generate_activity(self, distrib_array, mu_sd=np.nan, sigma_sd=np.nan,
                           use_high_integration_resolution=False):
         # 2 if 2D-grid for plotting the signal, 1 if one single continuous experiment
         n_dims = utils.get_dimension_list(distrib_array)
@@ -259,7 +258,7 @@ class voxel:
             n_stimuli = len(distrib_array)
             activity = np.zeros(n_stimuli)  # Initialization
 
-        if self.coding_scheme == 'rate':    # Rate coding case
+        if self.coding_scheme.find('rate') != -1:    # Rate coding case
             if self.n_population == 2:    # If the mean and the variance are encoded by two independent populations
                 # Activity due to mean and uncertainty encoding (linear combination). Only one neuron per subpopulation
                 '''
@@ -271,24 +270,24 @@ class voxel:
                     for k_mu in range(n_mu):
                         for k_sigma in range(n_sigma):
                             distrib = distrib_array[k_mu][k_sigma]
-                            q_mu = distrib.mean  # Mean of the distribution
+                            mu = distrib.mean  # Mean of the distribution
                             sigma = distrib.sd  # Standard deviation of the distribution
                             activity[k_mu, k_sigma] = self.population_fraction[0]*self.subpopulation_fraction[0, 0]\
-                                                        *q_mu + (q_mu_sd/sigma_sd)*self.population_fraction[1]\
+                                                        *mu + (mu_sd/sigma_sd)*self.population_fraction[1]\
                                                                   *self.subpopulation_fraction[1, 0]*sigma
                 # Case of single array (when 1D-grid of distributions)
                 elif n_dims == 1:
                     for k in range(n_stimuli):
                         distrib = distrib_array[k]
-                        q_mu = distrib.mean  # Mean of the distribution
+                        mu = distrib.mean  # Mean of the distribution
                         sigma = distrib.sd  # Standard deviation of the distribution
                         activity[k] = self.population_fraction[0] * self.subpopulation_fraction[0, 0] \
-                                                    * q_mu + (q_mu_sd / sigma_sd) * self.population_fraction[1] \
+                                                    * mu + (mu_sd / sigma_sd) * self.population_fraction[1] \
                                                                * self.subpopulation_fraction[1, 0] * sigma
                 # Correction of the rate weights related to sigma
-                self.weights[1, :] = self.weights[1, :] * (q_mu_sd / sigma_sd)
+                self.weights[1, :] = self.weights[1, :] * (mu_sd / sigma_sd)
 
-        elif self.coding_scheme == 'ppc':    # Probabilistic population coding case
+        elif self.coding_scheme.find('ppc') != -1:    # Probabilistic population coding case
 
             if n_dims == 2:
                 # Defines the 2D-grid of means and sigma
@@ -327,7 +326,7 @@ class voxel:
                     for k in range(n_stimuli):
                         activity[k] += self.weights[0, i]*f_mu[k]\
                                                          + self.weights[1, i]*f_sigma[k]
-        elif self.coding_scheme == 'dpc':    # Distributional population coding case
+        elif self.coding_scheme.find('dpc') != -1:    # Distributional population coding case
 
             for i in range(self.tuning_curve[0].N):
                 proj = self.tuning_curve[0].compute_projection(distrib_array, i, use_high_integration_resolution)
@@ -339,10 +338,10 @@ class voxel:
 
 class experiment:
 
-    def __init__(self, initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, distributions):
+    def __init__(self, initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations, distributions):
         self.initial_time = initial_time
         self.final_time = final_time
-        self.n_blocks = n_blocks
+        self.n_sessions = n_sessions
         self.n_stimuli = len(stimulus_onsets)
         self.stimulus_onsets = stimulus_onsets
         self.stimulus_durations = stimulus_durations
@@ -392,25 +391,25 @@ class fmri:
     def get_regressor(self, exp, coding_scheme, tc=[], reg_fmri_gain=1, use_high_integration_resolution=False):
         hrf_model = 'spm'    # Simple regressor computation
 
-        if coding_scheme=='rate':
+        if coding_scheme.find('rate')!=-1:
             # Get the features before convolution
-            q_mu = np.zeros(exp.n_stimuli)
+            mu = np.zeros(exp.n_stimuli)
             sigma = np.zeros(exp.n_stimuli)
             for k in range(exp.n_stimuli):
-                q_mu[k] = exp.distributions[k].mean
+                mu[k] = exp.distributions[k].mean
                 sigma[k] = exp.distributions[k].sd
 
-            q_signal, q_scan_signal, name, stim = self.get_bold_signal(exp, q_mu, hrf_model)
+            q_signal, q_scan_signal, name, stim = self.get_bold_signal(exp, mu, hrf_model)
             sigma_signal, sigma_scan_signal, name, stim = self.get_bold_signal(exp, sigma, hrf_model)
 
             X = np.array([q_scan_signal, sigma_scan_signal])
             X = np.transpose(X)
 
-        elif coding_scheme=='ppc':
-            q_mu = np.zeros(exp.n_stimuli)
+        elif coding_scheme.find('ppc')!=-1:
+            mu = np.zeros(exp.n_stimuli)
             sigma = np.zeros(exp.n_stimuli)
             for k in range(exp.n_stimuli):
-                q_mu[k] = exp.distributions[k].mean
+                mu[k] = exp.distributions[k].mean
                 sigma[k] = exp.distributions[k].sd
             tc_mu = tc[0]
             tc_sigma = tc[1]
@@ -421,7 +420,7 @@ class fmri:
 
             for i in range(tc_mu.N):
                 q_signal_tmp, q_scan_signal_tmp, name, stim = \
-                    self.get_bold_signal(exp, tc_mu.f(q_mu, i), hrf_model)
+                    self.get_bold_signal(exp, tc_mu.f(mu, i), hrf_model)
                 q_scan_signal[:, i] = q_scan_signal_tmp.reshape((len(q_scan_signal_tmp,)))
                 X[:, i] = q_scan_signal[:, i]
 
@@ -433,7 +432,7 @@ class fmri:
                 # Design matrix filling
                 X[:, tc_mu.N+i] = sigma_scan_signal[:, i]
 
-        elif coding_scheme == 'dpc':
+        elif coding_scheme.find('dpc')!=-1:
 
             tc_mu = tc[0]    # Tuning curves of interest for DPC
 
