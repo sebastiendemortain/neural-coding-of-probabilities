@@ -72,8 +72,21 @@ class tuning_curve:
             sigma2_f = self.t**2
             tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
             return tc_value
-        else:
-            return
+        elif (self.tc_type=='sigmoid'):
+            # Spacing between each tuning curve
+            n = self.N/2    # Number of tuning curve of the same monotony
+            delta_mu = (self.upper_bound-self.lower_bound)/(n-1)
+            # Mean of the tuning curve
+            if i<n:    # Increasing sigmoids
+                mu = self.lower_bound+i*delta_mu
+                tc_value = 1/(1+np.exp(-(x-mu)/self.t))
+            else: # Decreasing sigmoids
+                mu = self.lower_bound + (i-n) * delta_mu
+                tc_value = 1 / (1 + np.exp((x - mu) / self.t))
+            return tc_value
+
+        return
+
 
     def compute_projection(self, distrib_array, i, use_high_integration_resolution):
         '''Returns the vector/matrix of projection onto the i-th tuning curve of the 2D-grid/the sequence of
