@@ -29,9 +29,9 @@ fmri_gain = 1    # Amplification of the signal
 coding_scheme = 'rate'
 
 # TC related to the mean
-tc_type_mean = 'gaussian'    # Tuning curve type
-N_mean = 10    # Number of tuning curves
-t_mean = 0.05    # The best value from the previous "sum" analysis
+tc_type_mu = 'gaussian'    # Tuning curve type
+N_mu = 10    # Number of tuning curves
+t_mu = 0.05    # The best value from the previous "sum" analysis
 
 # TC related to the uncertainty
 tc_type_sigma = 'gaussian'    # Tuning curve type
@@ -50,7 +50,7 @@ distrib_type = 'HMM'
 n_stimuli = 380
 
 # load the data
-[p1g2_dist_array, p1g2_mean_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_blocks, n_stimuli,
+[p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_blocks, n_stimuli,
                                                                                       distrib_type)
 
 # Initialize the design matrix and the response vector
@@ -61,32 +61,32 @@ subject = 0
 block = 0
 
 p1g2_dist = p1g2_dist_array[subject][block]
-p1g2_mean = p1g2_mean_array[subject][block]
+p1g2_mu = p1g2_mu_array[subject][block]
 p1g2_sd = p1g2_sd_array[subject][block]
 
 # Plot the distribution over means and sd
 # Merge the data all together
-all_q_mean = np.concatenate(p1g2_mean_array, axis=2)
-all_q_mean = np.reshape(all_q_mean, (n_subjects*n_blocks*n_stimuli,))
+all_mu = np.concatenate(p1g2_mu_array, axis=2)
+all_mu = np.reshape(all_mu, (n_subjects*n_blocks*n_stimuli,))
 
 all_sigma = np.concatenate(p1g2_sd_array, axis=2)
 all_sigma = np.reshape(all_sigma, (n_subjects*n_blocks*n_stimuli,))
 
 plt.figure()
-# hist_q_mean = np.histogram(all_q_mean, bin=100)
+# hist_mu = np.histogram(all_mu, bin=100)
 # hist_sigma = np.histogram(all_sigma, bin=100)
-# x_q_mean = np.linspace(0, 1, len(hist_q_mean))
+# x_mu = np.linspace(0, 1, len(hist_mu))
 # x_sigma = np.linspace(np.min(all_sigma), np.max(all_sigma), len(hist_sigma))
-ax_q_mean = plt.subplot(211)
-ax_q_mean.hist(all_q_mean, bins=100)
-ax_q_mean.set_xlabel('Probability')
+ax_mu = plt.subplot(211)
+ax_mu.hist(all_mu, bins=100)
+ax_mu.set_xlabel('Probability')
 
 ax_sigma = plt.subplot(212)
 ax_sigma.hist(all_sigma, bins=100)
 ax_sigma.set_xlabel('Standard deviation')
 plt.show()
 
-q_mean = p1g2_mean[0, :n_stimuli]
+mu = p1g2_mu[0, :n_stimuli]
 sigma = p1g2_sd[:n_stimuli]
 dist = p1g2_dist[:, :n_stimuli]
 # Creation of a list of simulated distributions
@@ -96,24 +96,24 @@ simulated_distrib = [None for k in range(n_stimuli)]
 for k in range(n_stimuli):
     # Normalization of the distribution
     norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
-    simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
+    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
     # test[k] = np.max(simulated_distrib[k].beta(x))
     # if np.isinf(test[k]):
     #     print(k)
 
 # We find the variance of the data in order to scale equally activity from mean and activity from uncertainty
-q_mean_sd = np.std(q_mean)  # Variance of the signal of q_mean's
+mu_sd = np.std(mu)  # Variance of the signal of mu's
 sigma_sd = np.std(sigma)  # Variance of the signal of sigma's
 
 # Lower and upper bounds of the encoded summary quantity (for tuning curves)
-tc_lower_bound_mean = 0
-tc_upper_bound_mean = 1
+tc_lower_bound_mu = 0
+tc_upper_bound_mu = 1
 tc_lower_bound_sigma = np.min(sigma) - np.std(sigma)
 # we define the upper bound to be a bit away from the highest uncertainty
 tc_upper_bound_sigma = np.max(sigma) + np.std(sigma)
 
 # Creates the tuning_curve object
-tc_mean = tuning_curve(tc_type_mean, N_mean, t_mean, tc_lower_bound_mean, tc_upper_bound_mean)
+tc_mu = tuning_curve(tc_type_mu, N_mu, t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
 
 # Creates the tuning_curve object
 tc_sigma = tuning_curve(tc_type_sigma, N_sigma, t_sigma, tc_lower_bound_sigma, tc_upper_bound_sigma)
@@ -154,16 +154,16 @@ frame_times = simu_fmri.frame_times
 if true_coding_scheme == 'rate':
     true_tc = []
 elif true_coding_scheme == 'ppc':
-    true_tc = [tc_mean, tc_sigma]
+    true_tc = [tc_mu, tc_sigma]
 elif true_coding_scheme == 'dpc':
-    true_tc = [tc_mean]
+    true_tc = [tc_mu]
 
 # if coding_scheme == 'rate':
 #     tc = []
 # elif coding_scheme == 'ppc':
-#     tc = [tc_mean, tc_sigma]
+#     tc = [tc_mu, tc_sigma]
 # elif coding_scheme == 'dpc':
-#     tc = [tc_mean]
+#     tc = [tc_mu]
 
 # Creation of the voxel
 true_voxel = voxel(true_coding_scheme, true_population_fraction, true_tc)
@@ -173,9 +173,9 @@ true_voxel = voxel(true_coding_scheme, true_population_fraction, true_tc)
 # Import Matlab structure containing data and defining inputs
 data_mat = sio.loadmat('data/ideal_observer_{}.mat'.format(k_fold+1), struct_as_record=False)
 
-[p1g2_dist, p1g2_mean, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
+[p1g2_dist, p1g2_mu, p1g2_sd] = neural_proba.import_distrib_param(data_mat)
 
-q_mean = p1g2_mean[0, :n_stimuli]
+mu = p1g2_mu[0, :n_stimuli]
 sigma = p1g2_sd[:n_stimuli]
 dist = p1g2_dist[:, :n_stimuli]
 # Creation of a list of simulated distributions
@@ -185,7 +185,7 @@ simulated_distrib = [None for k in range(n_stimuli)]
 for k in range(n_stimuli):
     # Normalization of the distribution
     norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-    simulated_distrib[k] = distrib(q_mean[k], sigma[k], norm_dist)
+    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
     # test[k] = np.max(simulated_distrib[k].beta(x))
     # if np.isinf(test[k]):
     #     print(k)
@@ -194,7 +194,7 @@ for k in range(n_stimuli):
 exp = experiment(initial_time, final_time, n_blocks, stimulus_onsets, stimulus_durations, simulated_distrib)
 
 # The amplitudes of the neural signal
-true_activity = true_voxel.generate_activity(simulated_distrib, q_mean_sd, sigma_sd,
+true_activity = true_voxel.generate_activity(simulated_distrib, mu_sd, sigma_sd,
                                              use_high_integration_resolution=False)
 
 hrf_model = 'spm'    # No fancy hrf model
