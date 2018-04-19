@@ -7,6 +7,8 @@ import numpy as np
 #import decimal
 import matplotlib.pyplot as plt
 
+import itertools
+
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -64,6 +66,8 @@ distrib_type = 'HMM'
 # Load the corresponding data
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
+# Just for now
+n_subjects = 1
 
 # Experimental design information
 eps = 1e-5  # For floating points issues
@@ -71,7 +75,7 @@ eps = 1e-5  # For floating points issues
 between_stimuli_duration = 1.3
 initial_time = between_stimuli_duration + eps
 final_time = between_stimuli_duration * (n_stimuli + 1) + eps
-stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli)
+stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli) # tous les 15 essais +-3 essais : une interruption de 8-12s
 stimulus_durations = 0.01 * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 
 # fMRI information
@@ -104,167 +108,209 @@ n_test = 1
 ### LOOP OVER THE SCHEME
 for k_fit_scheme in range(n_schemes):
 
-k_fit_scheme=0
-k_true_scheme=k_fit_scheme
+    #k_fit_scheme=0
+    k_true_scheme = k_fit_scheme
 
-# Current schemes
-fit_scheme = scheme_array[k_fit_scheme]
-true_scheme = scheme_array[k_true_scheme]
+    # Current schemes
+    fit_scheme = scheme_array[k_fit_scheme]
+    true_scheme = scheme_array[k_true_scheme]
 
-# We replace the right value of the "t"'s according to the type of tuning curve
-if fit_scheme.find('gaussian') != -1:
-    fit_t_mu_array = t_mu_gaussian_array
-    fit_t_sigma_array = t_sigma_gaussian_array
-    fit_tc_type = 'gaussian'
+    # We replace the right value of the "t"'s according to the type of tuning curve
+    if fit_scheme.find('gaussian') != -1:
+        fit_t_mu_array = t_mu_gaussian_array
+        fit_t_sigma_array = t_sigma_gaussian_array
+        fit_tc_type = 'gaussian'
 
-elif fit_scheme.find('sigmoid') != -1:
-    fit_t_mu_array = t_mu_sigmoid_array
-    fit_t_sigma_array = t_sigma_sigmoid_array
-    fit_tc_type = 'sigmoid'
+    elif fit_scheme.find('sigmoid') != -1:
+        fit_t_mu_array = t_mu_sigmoid_array
+        fit_t_sigma_array = t_sigma_sigmoid_array
+        fit_tc_type = 'sigmoid'
 
-if true_scheme.find('gaussian') != -1:
-    true_t_mu_array = t_mu_gaussian_array
-    true_t_sigma_array = t_sigma_gaussian_array
-    true_tc_type = 'gaussian'
+    if true_scheme.find('gaussian') != -1:
+        true_t_mu_array = t_mu_gaussian_array
+        true_t_sigma_array = t_sigma_gaussian_array
+        true_tc_type = 'gaussian'
 
-elif true_scheme.find('sigmoid') != -1:
-    true_t_mu_array = t_mu_sigmoid_array
-    true_t_sigma_array = t_sigma_sigmoid_array
-    true_tc_type = 'sigmoid'
+    elif true_scheme.find('sigmoid') != -1:
+        true_t_mu_array = t_mu_sigmoid_array
+        true_t_sigma_array = t_sigma_sigmoid_array
+        true_tc_type = 'sigmoid'
 
-### LOOP OVER THE N's
+    ### LOOP OVER THE FIT N's
+    for k_fit_N in range(n_N):
+        # k_fit_N=0
+        # k_true_N=0
 
-k_fit_N=0
-k_true_N=0
+        # Current N
+        fit_N = N_array[k_fit_N]
 
-# Current N
-true_N = N_array[k_true_N]
-fit_N = N_array[k_fit_N]
+        # Creation of the true tuning curve objects
+        fit_t_mu = fit_t_mu_array[k_fit_N]
+        fit_t_sigma = fit_t_sigma_array[k_fit_N]
+        fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
+        fit_tc_sigma = tuning_curve(fit_tc_type, fit_N, fit_t_sigma, tc_lower_bound_sigma,
+                                     tc_upper_bound_sigma)
 
-# Current t
-true_t_mu = true_t_mu_array[k_true_N]
-fit_t_mu = true_t_mu_array[k_fit_N]
-true_t_sigma = true_t_sigma_array[k_true_N]
-fit_t_sigma = true_t_sigma_array[k_fit_N]
+        if fit_scheme.find('ppc') != -1:
+            fit_tc = [fit_tc_mu, fit_tc_sigma]
+        elif fit_scheme.find('dpc') != -1:
+            fit_tc = [fit_tc_mu]
+        elif fit_scheme.find('rate') != -1:
+            fit_tc = []
 
-# Creation of the tuning curve objects
-true_tc_mu = tuning_curve(true_tc_type, true_N, true_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-true_tc_sigma = tuning_curve(true_tc_type, true_N, true_t_sigma, tc_lower_bound_sigma, tc_upper_bound_sigma)
+        ### LOOP OVER THE SUBJECTS
+        for k_subject in range(n_subjects):
+            # k_subject = 0
 
-if true_scheme.find('ppc') != -1:
-    true_tc = [true_tc_mu, true_tc_sigma]
-elif true_scheme.find('dpc') != -1:
-    true_tc = [true_tc_mu]
-elif true_scheme.find('rate') != -1:
-    true_tc = []
+            # Initialization of the design matrix and its zscore version
+            X = [None for k in range(n_sessions)]
+            Xz = [None for k in range(n_sessions)]
 
-### LOOP OVER THE W's
+            ### FIRST LOOP OVER THE SESSIONS : simulating the regressors for this subject
+            for k_session in range(n_sessions):
+                # k_session = 0
 
-k_population_fraction = 0
-k_subpopulation_fraction = 0
+                # Get the data of interest
+                mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
+                sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+                dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
 
-# Current weights
-# Fraction of each neural population
-population_fraction = neural_proba.get_population_fraction(true_scheme)
-n_population = len(population_fraction)
+                # Formatting
+                simulated_distrib = [None for k in range(n_stimuli)]
+                for k in range(n_stimuli):
+                    # Normalization of the distribution
+                    norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
+                    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
 
-# Fraction of each neural subpopulation
-# No rate coding here
-subpopulation_fraction = neural_proba.get_subpopulation_fraction(scheme_array, n_population, true_N)
+                # Creation of experiment object
+                exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations, simulated_distrib)
 
-# Generate the data from the voxel
-true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction, [true_tc_mu, true_tc_sigma])
+                # Regressor and BOLD computation
+
+                X[k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
+                ### END OF FIRST LOOP OVER SESSIONS
+
+            # Manual Z-scoring of regressors (2nd loop over sessions)
+            n_features = len(X[0][0, :])
+            X_mean = np.mean(np.concatenate(np.asarray(X), axis=0), axis=0)
+            X_sd = np.std(np.concatenate(np.asarray(X), axis=0), axis=0)
+
+            for k_session in range(n_sessions):
+                Xz[k_session] = np.zeros_like(X[k_session])
+                for feature in range(n_features):
+                    Xz[k_session][:, feature] = X[k_session][:, feature] - X_mean[feature] * np.ones_like(
+                        X[k_session][:, feature])  # Centering
+                    Xz[k_session][:, feature] = X[k_session][:, feature] / X_sd[feature]  # Standardization
+            # End of z-scoring
+
+            ### LOOP OVER N_true
+            for k_true_N in range(n_N):
+                true_N = N_array[k_true_N]
+                # Creation of the true tuning curve objects
+                true_t_mu = true_t_mu_array[k_true_N]
+                true_t_sigma = true_t_sigma_array[k_true_N]
+                true_tc_mu = tuning_curve(true_tc_type, true_N, true_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
+                true_tc_sigma = tuning_curve(true_tc_type, true_N, true_t_sigma, tc_lower_bound_sigma,
+                                             tc_upper_bound_sigma)
+
+                if true_scheme.find('ppc') != -1:
+                    true_tc = [true_tc_mu, true_tc_sigma]
+                elif true_scheme.find('dpc') != -1:
+                    true_tc = [true_tc_mu]
+                elif true_scheme.find('rate') != -1:
+                    true_tc = []
+
+                ### LOOP OVER THE W's
+                for k_population_fraction, k_subpopulation_fraction in itertools.product(range(n_population_fraction), range(n_subpopulation_fraction)):
+
+                    # k_population_fraction = 0
+                    # k_subpopulation_fraction = 0
+                    # Initialization of response and its zscored version
+                    y = [None for k in range(n_sessions)]
+                    yz = [None for k in range(n_sessions)]
+
+                    # Current weights
+                    # Fraction of each neural population
+                    population_fraction = neural_proba.get_population_fraction(true_scheme)
+                    n_population = len(population_fraction)
+
+                    # Fraction of each neural subpopulation
+                    # No rate coding here
+                    subpopulation_fraction = neural_proba.get_subpopulation_fraction(n_population, true_N)
+
+                    # Generate the data from the voxel
+                    true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction, [true_tc_mu, true_tc_sigma])
+
+                    ### LOOP OVER THE SESSIONS : simulating the response
+                    for k_session in range(n_sessions):
+                        if k_fit_scheme==k_true_scheme and k_fit_N==k_true_N:    # In order to save some computation time
+                            weights = np.reshape(true_voxel.weights, (n_features,))
+                            y[k_session] = np.dot(X[k_session], weights)
+                        else:    # We need to compute the response independently from the regressors
+                            # Get the data of interest
+                            mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
+                            sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+                            dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
+
+                            # Formatting
+                            simulated_distrib = [None for k in range(n_stimuli)]
+                            for k in range(n_stimuli):
+                                # Normalization of the distribution
+                                norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
+                                simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
+
+                            # Creation of experiment object
+                            exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
+                                             simulated_distrib)
+
+                            true_activity = true_voxel.generate_activity(simulated_distrib)
+                            signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, 1)
+                            y[k_session] = scan_signal
+
+                            # Noise injection
+                            y[k_session] = y[k_session] + noise_coeff*np.random.normal(0, 1, len(y[k_session]))
+
+                    # Z-scoring of y
+                    y_mean = np.mean(np.concatenate(np.asarray(y), axis=0))
+                    y_sd = np.std(np.concatenate(np.asarray(y), axis=0))
+
+                    for k_session in range(n_sessions):
+                        yz[k_session] = y[k_session] - y_mean    # Centering
+                        yz[k_session] = y[k_session]/y_sd    # Standardization
+
+                    ### End of z-scoring of y
 
 
-### LOOP OVER THE SUBJECTS
-k_subject = 0
+                    ### BEGINNING OF THIRS LOOP OVER SESSIONS (CROSS-VALIDATION)
 
-# Initialization of the design matrix and response
-X = [None for k in range(n_sessions)]
-y = [None for k in range(n_sessions)]
+                    for k_session in range(n_sessions):
+                        X_train = np.concatenate(np.asarray(Xz[:k_session]+Xz[k_session+1:]), axis=0)
+                        y_train = np.concatenate(np.asarray(yz[:k_session]+yz[k_session+1:]), axis=0)
+                        X_test = Xz[k_session]
+                        y_test = yz[k_session]
+                        # Create linear regression object
+                        regr = linear_model.LinearRegression(fit_intercept=True)
 
-### FIRST LOOP OVER THE SESSIONS : simulating the data and regressors for this subject
-k_session = 0
-
-# Get the data of interest
-mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
-dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
-
-# Formatting
-simulated_distrib = [None for k in range(n_stimuli)]
-for k in range(n_stimuli):
-    # Normalization of the distribution
-    norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
-
-# Creation of experiment object
-exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations, simulated_distrib)
-
-# Regressor and BOLD computation
-
-X[k_session] = simu_fmri.get_regressor(exp, fit_scheme, true_tc)
-n_features = len(X[0][0, :])
-
-if fit_scheme==true_scheme:    # In order to save some computation time
-    weights = np.reshape(true_voxel.weights, (n_features,))
-    y[k_session] = np.dot(X[k_session], weights)
-else:    # We need to compute both the regressors and the response separately
-    true_activity = true_voxel.generate_activity(simulated_distrib)
-    signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, 1)
-    y[k_session] = scan_signal
-
-# Noise injection
-y[k_session] = y[k_session] + noise_coeff*np.random.normal(0, 1, len(y[k_session]))
-
-### END OF FIRST LOOP OVER SESSIONS
-
-# Manual z-scoring
-X_mean = np.mean(np.concatenate(np.asarray(X), axis=0), axis=0)
-X_sd = np.std(np.concatenate(np.asarray(X), axis=0), axis=0)
-
-y_mean = np.mean(np.concatenate(np.asarray(y), axis=0))
-y_sd = np.std(np.concatenate(np.asarra(y), axis=0))
-
-### BEGINNING OF SECOND LOOP OVER SESSIONS (Z-SCORING)
-
-for k_session in range(n_sessions):
-    y[k_session] = y[k_session] - y_mean    # Centering
-    y[k_session] = y[k_session]/y_sd    # Standardization
-    for feature in range(n_features):
-        X[k_session][:, feature] = X[k_session][:, feature]-X_mean[feature]*np.ones_like(X[k_session][:, feature])    # Centering
-        X[k_session][:, feature] = X[k_session][:, feature]/X_sd[feature]     # Standardization
-
-### END OF SECOND LOOP OVER SESSIONS
-
-
-### BEGINNING OF THIRS LOOP OVER SESSIONS (CROSS-VALIDATION)
-
-for k_session in range(n_sessions):
-    X_train = np.concatenate(np.asarray(X[:k_session]+X[k_session+1:]), axis=0)
-    y_train = np.concatenate(np.asarray(y[:k_session]+y[k_session+1:]), axis=0)
-    X_test = X[k_session]
-    y_test = y[k_session]
-    # Create linear regression object
-    regr = linear_model.LinearRegression(fit_intercept=True)
-
-    # Train the model using the training set
-    regr.fit(X_train, y_train)
-    # Make predictions using the testing set
-    y_pred = regr.predict(X_test)
-    # mse[block] = mean_squared_error(y_test, y_pred)
-    # Updates the big tensor
-    r2[k_fit_scheme, k_fit_N, k_true_N, k_population_fraction, k_subpopulation_fraction, k_subject, k_session] \
-        = r2_score(y_test, y_pred)
-    # print('R2 = '+str(r2_score(y_test, y_pred)))
-    # # The coefficients
-    # print('True coefficients: \n', true_voxel.weights)
-    # print('Fitted coefficients: \n', regr.coef_)
-    with open("output/results/Output.txt", "w") as text_file:
-        text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={}, k_population_fraction={} k_subpopulation_fraction={} k_subject={} k_session={} \nr2={} \n'.format(
-            k_fit_scheme, k_fit_N, k_true_N, k_population_fraction, k_subpopulation_fraction, k_subject, k_session,
-            r2_score(y_test, y_pred)))
-
+                        # Train the model using the training set
+                        regr.fit(X_train, y_train)
+                        # Make predictions using the testing set
+                        y_pred = regr.predict(X_test)
+                        # mse[block] = mean_squared_error(y_test, y_pred)
+                        # Updates the big tensor
+                        r2[k_fit_scheme, k_fit_N, k_true_N, k_population_fraction, k_subpopulation_fraction, k_subject, k_session] \
+                            = r2_score(y_test, y_pred)
+                        # print('R2 = '+str(r2_score(y_test, y_pred)))
+                        # # The coefficients
+                        # print('True coefficients: \n', true_voxel.weights)
+                        # print('Fitted coefficients: \n', regr.coef_)
+                        with open("output/results/Output.txt", "w") as text_file:
+                            text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
+                                k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+                                r2_score(y_test, y_pred)))
+                        print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
+                                k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+                                r2_score(y_test, y_pred)))
+                        a=1
 
 np.save('output/results/r2_snr0.npy', r2)
 
