@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.decomposition import PCA
 
 import utils
 
@@ -99,11 +100,11 @@ tc_upper_bound_sigma = 0.35
 
 # Optimal t for each N
 k_N = 2
-N_array = np.array([6, 8, 2, 10, 14, 16, 20])
+N_array = np.array([6, 8, 10, 14, 16, 20])
 t_mu_sigmoid_array = np.array([9e-2, 6e-2, 5e-2, 4e-2, 3e-2, 3e-2])
 t_sigma_sigmoid_array = np.array([3e-2, 2e-2, 2e-2, 1.5e-2, 1e-2, 8e-3])
 
-t_mu_gaussian_array = np.array([1e-1, 8e-2, 5e-2, 3.5e-2, 3e-2, 2.5e-2])
+t_mu_gaussian_array = np.array([1e-1, 8e-2, 0.15])#5e-2, 3.5e-2, 3e-2, 2.5e-2])
 t_sigma_gaussian_array = np.array([3e-2, 2e-2, 1.7e-2, 1.2e-2, 1e-2, 8e-3])
 
 # fig = plt.figure()
@@ -341,69 +342,69 @@ title_fontsize = 20
 # plt.show()
 # a=1
 
-high = 0.9
-low = 0.1
-width = 0.5
-low_low = np.array([low, low])
-low_high = np.array([low, high])
-high_low = np.array([high, low])
-high_high = np.array([high, high])
+# high = 0.9
+# low = 0.1
+# width = 0.5
+# low_low = np.array([low, low])
+# low_high = np.array([low, high])
+# high_low = np.array([high, low])
+# high_high = np.array([high, high])
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, low_low, width=width, color=['red', 'blue'])
+# ax.set_ylim(0, 1.05)
+# utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/low_low.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, high_low, width=width, color=['red', 'blue'])
+# ax.set_ylim(0, 1.05)
+# utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/high_low.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, high_high, width=width, color=['red', 'blue'])
+# ax.set_ylim(0, 1.05)
+# utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/high_high.png', bbox_inches='tight')
+#
+# plt.show()
+#
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# x = ['Probability neuron', 'Uncertainty neuron']
+# ax.bar(x, low_high, width=width, color=['red', 'blue'])
+# ax.set_ylim(0, 1.05)
+# utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
+#
+# plt.xticks(rotation=45, fontsize=xtick_fontsize)
+# ax.get_yaxis().set_ticks([])
+#
+# plt.savefig('output/figures/low_high.png', bbox_inches='tight')
+#
+# plt.show()
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-x = ['Probability neuron', 'Uncertainty neuron']
-ax.bar(x, low_low, width=width, color=['red', 'blue'])
-ax.set_ylim(0, 1.05)
-utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
-
-plt.xticks(rotation=45, fontsize=xtick_fontsize)
-ax.get_yaxis().set_ticks([])
-
-plt.savefig('output/figures/low_low.png', bbox_inches='tight')
-
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-x = ['Probability neuron', 'Uncertainty neuron']
-ax.bar(x, high_low, width=width, color=['red', 'blue'])
-ax.set_ylim(0, 1.05)
-utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
-
-plt.xticks(rotation=45, fontsize=xtick_fontsize)
-ax.get_yaxis().set_ticks([])
-
-plt.savefig('output/figures/high_low.png', bbox_inches='tight')
-
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-x = ['Probability neuron', 'Uncertainty neuron']
-ax.bar(x, high_high, width=width, color=['red', 'blue'])
-ax.set_ylim(0, 1.05)
-utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
-plt.xticks(rotation=45, fontsize=xtick_fontsize)
-ax.get_yaxis().set_ticks([])
-
-plt.savefig('output/figures/high_high.png', bbox_inches='tight')
-
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-x = ['Probability neuron', 'Uncertainty neuron']
-ax.bar(x, low_high, width=width, color=['red', 'blue'])
-ax.set_ylim(0, 1.05)
-utils.plot_detail(fig, ax, '', 'Firing rate (Hz)', xtick_fontsize)
-
-plt.xticks(rotation=45, fontsize=xtick_fontsize)
-ax.get_yaxis().set_ticks([])
-
-plt.savefig('output/figures/low_high.png', bbox_inches='tight')
-
-plt.show()
-a=1
 # ## END OF RATE VULGARIZATION PLOT
 #
 # ## BEGINNING OF PPC VULGARIZATION PLOT
@@ -698,47 +699,47 @@ a=1
 #
 # # Plot the optimal tuning curves
 #
-# fig = plt.figure()
-# x = np.linspace(tc_lower_bound_mu,tc_upper_bound_mu,1000)
-# plt.subplot(211)
-# for i in range(0, N_mu):
-#     plt.plot(x, tc_mu.f(x, i))
-#
-# plt.xlabel('Preferred probability')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
-#
-# plt.subplot(212)
-# x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
-# for i in range(0, N_sigma):
-#     plt.plot(x, tc_sigma.f(x, i))
-#
-# plt.xlabel('Preferred standard deviation')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
-# plt.show()
+fig = plt.figure()
+x = np.linspace(tc_lower_bound_mu,tc_upper_bound_mu,1000)
+plt.subplot(211)
+for i in range(0, N_mu):
+    plt.plot(x, tc_mu.f(x, i))
+
+plt.xlabel('Preferred probability')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
+
+plt.subplot(212)
+x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
+for i in range(0, N_sigma):
+    plt.plot(x, tc_sigma.f(x, i))
+
+plt.xlabel('Preferred standard deviation')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+plt.show()
 #
 #
 # Find the optimal tuning curves' standard deviation for fixed N : we consider the lowest std such that the sum over the TC is constant
 
-# tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15]    # The different std
-# x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
-# tc_sum = np.zeros([len(tested_t), 1000])    # Initialization of the different TC sum's
-#
-# for k_t in range(len(tested_t)):
-#     tc = tuning_curve(tc_type_mu, N_mu, tested_t[k_t], tc_lower_bound_mu, tc_upper_bound_mu)
-#     for i in range(N_mu):
-#         tc_sum[k_t, :] += tc.f(x, i)
-#
-# fig = plt.figure()
-# plt.subplot(211)
-# for k_t in range(len(tested_t)):
-#     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
-#
-# plt.xlabel('Probability')
-# plt.ylabel('Sum over the tuning curves')
-# plt.legend()
-#
+tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15]    # The different std
+x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
+tc_sum = np.zeros([len(tested_t), 1000])    # Initialization of the different TC sum's
+
+for k_t in range(len(tested_t)):
+    tc = tuning_curve(tc_type_mu, N_mu, tested_t[k_t], tc_lower_bound_mu, tc_upper_bound_mu)
+    for i in range(N_mu):
+        tc_sum[k_t, :] += tc.f(x, i)
+
+fig = plt.figure()
+plt.subplot(211)
+for k_t in range(len(tested_t)):
+    plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
+
+plt.xlabel('Probability')
+plt.ylabel('Sum over the tuning curves')
+plt.legend()
+
 # tested_t = [1e-3, 5e-3, 1e-2, 2e-2, 3e-2, 5e-2]    # The different std
 # x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
 # tc_sum = np.zeros([len(tested_t), 1000])
@@ -758,3 +759,43 @@ a=1
 # plt.show()
 ##################
 
+### SECOND SOLUTION : WE COMPUTE THE VARIANCE OF THE ACTIVITY VECTOR FOR SEVERAL MU'S
+
+tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15, 0.2, 0.25]    # The different std
+x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
+tc_var = np.zeros(len(tested_t))    # Initialization of the variance vector
+
+for k_t in range(len(tested_t)):
+    tc_val = np.zeros([1000, N_mu])  # Initialization of the different TC sum's
+    tc = tuning_curve(tc_type_mu, N_mu, tested_t[k_t], tc_lower_bound_mu, tc_upper_bound_mu)
+    for i in range(N_mu):
+        tc_val[:, i] = tc.f(x, i)
+        # tc_var[k_t] += np.var(tc_val[i, :])
+    pca = PCA(n_components=2)
+    pca.fit(tc_val)
+    print(pca.singular_values_)
+fig = plt.figure()
+plt.subplot(211)
+plt.plot(tested_t, tc_var)
+
+plt.xlabel('t')
+plt.ylabel('Sum of variance of the activity vector')
+plt.legend()
+
+# tested_t = [1e-3, 5e-3, 1e-2, 2e-2, 3e-2, 5e-2]    # The different std
+# x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
+# tc_sum = np.zeros([len(tested_t), 1000])
+#
+# for k_t in range(len(tested_t)):
+#     tc = tuning_curve(tc_type_sigma, N_sigma, tested_t[k_t], tc_lower_bound_sigma, tc_upper_bound_sigma)
+#     for i in range(N_sigma):
+#         tc_sum[k_t, :] += tc.f(x, i)
+#
+# plt.subplot(212)
+# for k_t in range(len(tested_t)):
+#     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
+#
+# plt.xlabel('Standard deviation')
+# plt.ylabel('Sum over the tuning curves')
+# plt.legend()
+plt.show()

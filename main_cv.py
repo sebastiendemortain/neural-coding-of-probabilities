@@ -5,11 +5,16 @@ from scipy import io as sio
 from scipy import stats
 import numpy as np
 #import decimal
+import matplotlib
+# matplotlib.use('Agg')    # To avoid bugs
 import matplotlib.pyplot as plt
 import pickle
 import itertools
+import time
 
-from multiprocessing import Pool
+import copy
+
+import multiprocessing as mp
 
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
@@ -69,9 +74,9 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # Just for now
-n_subjects = 20
-n_sessions = 2
-n_N = 2
+n_subjects = 2
+n_sessions = 1
+n_N = 1
 n_schemes = 1
 
 # Experimental design information
@@ -113,8 +118,9 @@ n_test = 1
 # Initialization of the design matrices and their zscore versions
 X = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
      for k_fit_scheme in range(n_schemes)]
-Xz = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
-     for k_fit_scheme in range(n_schemes)]
+
+# Xz = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
+#      for k_fit_scheme in range(n_schemes)]
 
 # Initialization of the response vectors and their zscore versions
 y = [[[[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_true_N in range(n_N)]
@@ -132,9 +138,21 @@ weights = [[[[None for k_true_N in range(n_N)] for k_subpopulation_fraction in r
 ### WE BEGIN BY CREATING THE DESIGN MATRIX X
 
 def X_creation(k_subject):
+# , scheme_array=scheme_array, n_schemes=n_schemes, N_array=N_array, n_N=n_N,
+#                t_mu_gaussian_array=t_mu_gaussian_array, t_sigma_gaussian_array=t_sigma_gaussian_array,
+#                t_mu_sigmoid_array=t_mu_sigmoid_array, t_sigma_sigmoid_array=t_sigma_sigmoid_array,
+#                tc_lower_bound_mu=tc_lower_bound_mu, tc_upper_bound_mu=tc_upper_bound_mu,
+#                tc_lower_bound_sigma=tc_lower_bound_sigma, tc_upper_bound_sigma=tc_upper_bound_sigma,
+#                n_sessions=n_sessions, p1g2_mu_array=p1g2_mu_array, p1g2_sd_array=p1g2_sd_array,
+#                p1g2_dist_array=p1g2_dist_array, initial_time=initial_time, final_time=final_time,
+#                stimulus_onsets=stimulus_onsets, stimulus_durations=stimulus_durations, X=X, Xz=Xz):
+
     '''Creation of X per subject'''
+    X_tmp = [[[None for k_session in range(n_sessions)] for k_fit_N in range(n_N)] for k_fit_scheme in range(n_schemes)]
+
     # for k_subject in range(n_subjects):
     # k_subject = 0
+    start = time.time()
     ### LOOP OVER THE SCHEME
     for k_fit_scheme in range(n_schemes):
 
@@ -142,17 +160,6 @@ def X_creation(k_subject):
 
         # Current schemes
         fit_scheme = scheme_array[k_fit_scheme]
-
-        # We replace the right value of the "t"'s according to the type of tuning curve
-        if fit_scheme.find('gaussian') != -1:
-            fit_t_mu_array = t_mu_gaussian_array
-            fit_t_sigma_array = t_sigma_gaussian_array
-            fit_tc_type = 'gaussian'
-
-        elif fit_scheme.find('sigmoid') != -1:
-            fit_t_mu_array = t_mu_sigmoid_array
-            fit_t_sigma_array = t_sigma_sigmoid_array
-            fit_tc_type = 'sigmoid'
 
         ### LOOP OVER THE FIT N's
         for k_fit_N in range(n_N):
@@ -163,8 +170,18 @@ def X_creation(k_subject):
             fit_N = N_array[k_fit_N]
 
             # Creation of the true tuning curve objects
-            fit_t_mu = fit_t_mu_array[k_fit_N]
-            fit_t_sigma = fit_t_sigma_array[k_fit_N]
+
+            # We replace the right value of the "t"'s according to the type of tuning curve and the N
+            if fit_scheme.find('gaussian') != -1:
+                fit_t_mu = t_mu_gaussian_array[k_fit_N]
+                fit_t_sigma = t_sigma_gaussian_array[k_fit_N]
+                fit_tc_type = 'gaussian'
+
+            elif fit_scheme.find('sigmoid') != -1:
+                fit_t_mu = t_mu_sigmoid_array[k_fit_N]
+                fit_t_sigma = t_sigma_sigmoid_array[k_fit_N]
+                fit_tc_type = 'sigmoid'
+
             fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
             fit_tc_sigma = tuning_curve(fit_tc_type, fit_N, fit_t_sigma, tc_lower_bound_sigma,
                                          tc_upper_bound_sigma)
@@ -197,43 +214,47 @@ def X_creation(k_subject):
 
                 # Regressor and BOLD computation
 
-                X[k_fit_scheme][k_fit_N][k_subject][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
+                X_tmp[k_fit_scheme][k_fit_N][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
                 # Just to have Xz with np array of the right structure
-                Xz[k_fit_scheme][k_fit_N][k_subject][k_session] = np.zeros_like(X[k_fit_scheme][k_fit_N][k_subject][k_session])
+                # Xz[k_fit_scheme][k_fit_N][k_subject][k_session] = np.zeros_like(X[k_fit_scheme][k_fit_N][k_subject][k_session])
                 ### END OF FIRST LOOP OVER SESSIONS
 
-            # Manual Z-scoring of regressors inside the session (2nd loop over sessions)
-            n_fit_features = len(X[k_fit_scheme][k_fit_N][k_subject][k_session][0])
-            X_mean = np.mean(np.concatenate(X[k_fit_scheme][k_fit_N][k_subject], axis=0), axis=0)
-            X_sd = np.std(np.concatenate(X[k_fit_scheme][k_fit_N][k_subject], axis=0), axis=0)
-
-            for k_session in range(n_sessions):
-                for feature in range(n_fit_features):
-                    Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature]\
-                        = X[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] - X_mean[feature] * np.ones_like(
-                        X[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature])  # Centering
-                    Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] \
-                        = Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] / X_sd[feature]  # Standardization
-            # End of z-scoring
-    print('Subject n°'+str(k_subject)+' is done !')
+            # # Manual Z-scoring of regressors inside the session (2nd loop over sessions)
+            # n_fit_features = len(X[k_fit_scheme][k_fit_N][k_subject][k_session][0])
+            # X_mean = np.mean(np.concatenate(X[k_fit_scheme][k_fit_N][k_subject], axis=0), axis=0)
+            # X_sd = np.std(np.concatenate(X[k_fit_scheme][k_fit_N][k_subject], axis=0), axis=0)
+            #
+            # for k_session in range(n_sessions):
+            #     for feature in range(n_fit_features):
+            #         Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature]\
+            #             = X[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] - X_mean[feature] * np.ones_like(
+            #             X[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature])  # Centering
+            #         Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] \
+            #             = Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] / X_sd[feature]  # Standardization
+            # # End of z-scoring
+    end = time.time()
+    print('Design matrix creation : Subject n°'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
+    return X_tmp
 
 ### LOOP OVER THE SUBJECTS
 # Parallelization
 if __name__ == '__main__':
-    pool = Pool()  # Create a multiprocessing Pool
-    pool.map(X_creation, range(n_subjects))  # proces data_inputs iterable with pool
+    pool = mp.Pool(n_subjects)#mp.cpu_count())  # Create a multiprocessing Pool
+    X_tmp = pool.map(X_creation, range(n_subjects))  # proces inputs iterable with pool
 
 ### WE JUST END THE LOOP TO CREATE MATRICES X
+for k_fit_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
+    X[k_fit_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp[k_subject][k_fit_scheme][k_fit_N][k_session])
 
-# Save these matrices
-with open("output/design_matrices/X_all.txt", "wb") as fp:   #Pickling
-    pickle.dump(X, fp)
-with open("output/design_matrices/Xz_all.txt", "wb") as fpz:  # Pickling
-    pickle.dump(Xz, fpz)
+# # Save these matrices
+# with open("output/design_matrices/X_par.txt", "wb") as fp:   #Pickling
+#     pickle.dump(X, fp)
+# with open("output/design_matrices/Xz_all.txt", "wb") as fpz:  # Pickling
+#     pickle.dump(Xz, fpz)
 
 # # Load the design matrices
-# with open("output/design_matrices/X.txt", "rb") as fp:   # Unpickling
-#     X = pickle.load(fp)
+with open("output/design_matrices/X.txt", "rb") as fp:   # Unpickling
+    X0 = pickle.load(fp)
 #
 # with open("output/design_matrices/Xz.txt", "rb") as fpz:   # Unpickling
 #     Xz = pickle.load(fpz)
