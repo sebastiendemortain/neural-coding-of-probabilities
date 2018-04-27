@@ -7,7 +7,7 @@ import numpy as np
 #import decimal
 import matplotlib
 # matplotlib.use('Agg')    # To avoid bugs
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pickle
 import itertools
 import time
@@ -74,10 +74,10 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # Just for now
-n_subjects = 2
-n_sessions = 1
-n_N = 1
-n_schemes = 1
+#_subjects = 20
+#n_sessions = 4
+#n_N = len(N_array)
+#n_schemes =
 
 # Experimental design information
 eps = 1e-5  # For floating points issues
@@ -233,13 +233,13 @@ def X_creation(k_subject):
             #             = Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, feature] / X_sd[feature]  # Standardization
             # # End of z-scoring
     end = time.time()
-    print('Design matrix creation : Subject n°'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
+    print('Design matrix creation : Subject n'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
     return X_tmp
 
 ### LOOP OVER THE SUBJECTS
 # Parallelization
 if __name__ == '__main__':
-    pool = mp.Pool(n_subjects)#mp.cpu_count())  # Create a multiprocessing Pool
+    pool = mp.Pool(mp.cpu_count())  # Create a multiprocessing Pool
     X_tmp = pool.map(X_creation, range(n_subjects))  # proces inputs iterable with pool
 
 ### WE JUST END THE LOOP TO CREATE MATRICES X
@@ -247,221 +247,221 @@ for k_fit_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_sch
     X[k_fit_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp[k_subject][k_fit_scheme][k_fit_N][k_session])
 
 # # Save these matrices
-# with open("output/design_matrices/X_par.txt", "wb") as fp:   #Pickling
-#     pickle.dump(X, fp)
-# with open("output/design_matrices/Xz_all.txt", "wb") as fpz:  # Pickling
+with open("output/design_matrices/X_par.txt", "wb") as fp:   #Pickling
+    pickle.dump(X, fp)
+#     with open("output/design_matrices/Xz_all.txt", "wb") as fpz:  # Pickling
 #     pickle.dump(Xz, fpz)
 
 # # Load the design matrices
-with open("output/design_matrices/X.txt", "rb") as fp:   # Unpickling
-    X0 = pickle.load(fp)
+# with open("output/design_matrices/X.txt", "rb") as fp:   # Unpickling
+#    X0 = pickle.load(fp)
 #
 # with open("output/design_matrices/Xz.txt", "rb") as fpz:   # Unpickling
 #     Xz = pickle.load(fpz)
-
+a=1
 ### LOOP OVER THE SCHEME
-for k_fit_scheme in range(n_schemes):
-
-    # k_fit_scheme=0
-    k_true_scheme = k_fit_scheme
-
-    # Current schemes
-    fit_scheme = scheme_array[k_fit_scheme]
-    true_scheme = scheme_array[k_true_scheme]
-
-    # We replace the right value of the "t"'s according to the type of tuning curve
-    if fit_scheme.find('gaussian') != -1:
-        fit_t_mu_array = t_mu_gaussian_array
-        fit_t_sigma_array = t_sigma_gaussian_array
-        fit_tc_type = 'gaussian'
-
-    elif fit_scheme.find('sigmoid') != -1:
-        fit_t_mu_array = t_mu_sigmoid_array
-        fit_t_sigma_array = t_sigma_sigmoid_array
-        fit_tc_type = 'sigmoid'
-
-    if true_scheme.find('gaussian') != -1:
-        true_t_mu_array = t_mu_gaussian_array
-        true_t_sigma_array = t_sigma_gaussian_array
-        true_tc_type = 'gaussian'
-
-    elif true_scheme.find('sigmoid') != -1:
-        true_t_mu_array = t_mu_sigmoid_array
-        true_t_sigma_array = t_sigma_sigmoid_array
-        true_tc_type = 'sigmoid'
-
-    ### LOOP OVER THE FIT N's
-    for k_fit_N in range(n_N):
-        # k_fit_N=0
-        # k_true_N=0
-
-        # Current N
-        fit_N = N_array[k_fit_N]
-
-        # Creation of the true tuning curve objects
-        fit_t_mu = fit_t_mu_array[k_fit_N]
-        fit_t_sigma = fit_t_sigma_array[k_fit_N]
-        fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-        fit_tc_sigma = tuning_curve(fit_tc_type, fit_N, fit_t_sigma, tc_lower_bound_sigma,
-                                    tc_upper_bound_sigma)
-
-        if fit_scheme.find('ppc') != -1:
-            fit_tc = [fit_tc_mu, fit_tc_sigma]
-        elif fit_scheme.find('dpc') != -1:
-            fit_tc = [fit_tc_mu]
-        elif fit_scheme.find('rate') != -1:
-            fit_tc = []
-
-        ### LOOP OVER THE SUBJECTS
-        for k_subject in range(n_subjects):
-            # k_subject = 0
-
-            ### LOOP OVER N_true
-            for k_true_N in range(n_N):
-                true_N = N_array[k_true_N]
-                # Creation of the true tuning curve objects
-                true_t_mu = true_t_mu_array[k_true_N]
-                true_t_sigma = true_t_sigma_array[k_true_N]
-                true_tc_mu = tuning_curve(true_tc_type, true_N, true_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-                true_tc_sigma = tuning_curve(true_tc_type, true_N, true_t_sigma, tc_lower_bound_sigma,
-                                             tc_upper_bound_sigma)
-
-                if true_scheme.find('ppc') != -1:
-                    true_tc = [true_tc_mu, true_tc_sigma]
-                elif true_scheme.find('dpc') != -1:
-                    true_tc = [true_tc_mu]
-                elif true_scheme.find('rate') != -1:
-                    true_tc = []
-
-                ### LOOP OVER THE W's
-                for k_population_fraction, k_subpopulation_fraction in itertools.product(range(n_population_fraction),
-                                                                                         range(n_subpopulation_fraction)):
-
-                    # k_population_fraction = 0
-                    # k_subpopulation_fraction = 0
-
-                    # Current weights
-                    # Fraction of each neural population
-                    population_fraction = neural_proba.get_population_fraction(true_scheme)
-                    n_population = len(population_fraction)
-
-                    # Fraction of each neural subpopulation
-                    # No rate coding here
-                    subpopulation_fraction = neural_proba.get_subpopulation_fraction(n_population, true_N)
-
-                    # Generate the data from the voxel
-                    true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction,
-                                       [true_tc_mu, true_tc_sigma])
-                    n_true_features = n_population * true_N
-                    weights_tmp = np.reshape(true_voxel.weights, (n_true_features,))
-
-                    ### LOOP OVER THE SESSIONS : simulating the response
-                    for k_session in range(n_sessions):
-                            # We use X to compute y order to save some computation time
-                            # Temporary variables to lighten the reading
-                            X_tmp = X[k_true_scheme][k_true_N][k_subject][k_session]
-                            y_tmp = np.dot(X_tmp, weights_tmp)
-                            # Noise injection
-                            y_tmp = y_tmp + noise_coeff*np.random.normal(0, 1, len(y_tmp))
-
-                            # Allocation of the tensor
-                            y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject][
-                                k_session] = y_tmp
-
-                        # else:    # We need to compute the response independently from the regressors
-                        #     # Get the data of interest
-                        #     mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-                        #     sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
-                        #     dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
-                        #
-                        #     # Formatting
-                        #     simulated_distrib = [None for k in range(n_stimuli)]
-                        #     for k in range(n_stimuli):
-                        #         # Normalization of the distribution
-                        #         norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
-                        #         simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
-                        #
-                        #     # Creation of experiment object
-                        #     exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
-                        #                      simulated_distrib)
-                        #
-                        #     true_activity = true_voxel.generate_activity(simulated_distrib)
-                        #     signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, 1)
-                        #     y[k_session] = scan_signal
-
-                    # Z-scoring of y
-                    y_mean = np.mean(np.concatenate(np.asarray(y[k_true_scheme][k_population_fraction]
-                                                               [k_subpopulation_fraction][k_true_N][k_subject]),
-                                                    axis=0))
-                    y_sd = np.std(np.concatenate(np.asarray(y[k_true_scheme][k_population_fraction]
-                                                               [k_subpopulation_fraction][k_true_N][k_subject]),
-                                                 axis=0))
-                    # Allocation of the weight tensor
-                    weights[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N] \
-                        = weights_tmp
-
-                    for k_session in range(n_sessions):
-                        yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
-                        [k_session] = y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N]
-                        [k_subject][k_session] - y_mean    # Centering
-                        yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
-                        [k_session] = y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N]
-                        [k_subject][k_session]/y_sd    # Standardization
-
-                    ### End of z-scoring of y
-
-
-                    ### BEGINNING OF THIRS LOOP OVER SESSIONS (CROSS-VALIDATION)
-                    # Current cross-validation matrice and response
-                    X_cv = Xz[k_fit_scheme][k_fit_N][k_subject]
-                    y_cv = yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
-                    for k_session in range(n_sessions):
-                        X_train = np.concatenate(np.asarray(X_cv[:k_session]+Xz[k_session+1:]), axis=0)
-                        y_train = np.concatenate(np.asarray(y_cv[:k_session]+y_cv[k_session+1:]), axis=0)
-                        X_test = X_cv[k_session]
-                        y_test = y_cv[k_session]
-                        # Create linear regression object
-                        regr = linear_model.LinearRegression(fit_intercept=True)
-
-                        # Train the model using the training set
-                        regr.fit(X_train, y_train)
-                        # Make predictions using the testing set
-                        y_pred = regr.predict(X_test)
-                        # mse[block] = mean_squared_error(y_test, y_pred)
-                        # Updates the big tensor
-                        r2[k_fit_scheme, k_fit_N, k_true_N, k_population_fraction, k_subpopulation_fraction, k_subject, k_session] \
-                            = r2_score(y_test, y_pred)
-                        # print('R2 = '+str(r2_score(y_test, y_pred)))
-                        # # The coefficients
-                        # print('True coefficients: \n', true_voxel.weights)
-                        # print('Fitted coefficients: \n', regr.coef_)
-                        with open("output/results/Output.txt", "w") as text_file:
-                            text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
-                                k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-                                r2_score(y_test, y_pred)))
-                        print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
-                                k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-                                r2_score(y_test, y_pred)))
-                        a=1
-
-np.save('output/results/r2_snr0.npy', r2)
-
-# column_labels = ['Rate', 'PPC', 'DPC']
-# row_labels = ['True rate', 'True PPC', 'True DPC']
-# data = r2_mean
+# for k_fit_scheme in range(n_schemes):
 #
-# fig, ax = plt.subplots()
-# heatmap = ax.pcolor(data, cmap=plt.cm.Blues, vmin=0, vmax=1)
+#     # k_fit_scheme=0
+#     k_true_scheme = k_fit_scheme
 #
-# # put the major ticks at the middle of each cell
-# ax.set_xticks(np.arange(data.shape[1]) + 0.5, minor=False)
-# ax.set_yticks(np.arange(data.shape[0]) + 0.5, minor=False)
+#     # Current schemes
+#     fit_scheme = scheme_array[k_fit_scheme]
+#     true_scheme = scheme_array[k_true_scheme]
 #
-# # want a more natural, table-like display
-# ax.invert_yaxis()
-# ax.xaxis.tick_top()
+#     # We replace the right value of the "t"'s according to the type of tuning curve
+#     if fit_scheme.find('gaussian') != -1:
+#         fit_t_mu_array = t_mu_gaussian_array
+#         fit_t_sigma_array = t_sigma_gaussian_array
+#         fit_tc_type = 'gaussian'
 #
-# ax.set_xticklabels(column_labels, minor=False)
-# ax.set_yticklabels(row_labels, minor=False)
-# cbar = fig.colorbar(heatmap, ticks=[0, 1])
-# plt.show()
+#     elif fit_scheme.find('sigmoid') != -1:
+#         fit_t_mu_array = t_mu_sigmoid_array
+#         fit_t_sigma_array = t_sigma_sigmoid_array
+#         fit_tc_type = 'sigmoid'
+#
+#     if true_scheme.find('gaussian') != -1:
+#         true_t_mu_array = t_mu_gaussian_array
+#         true_t_sigma_array = t_sigma_gaussian_array
+#         true_tc_type = 'gaussian'
+#
+#     elif true_scheme.find('sigmoid') != -1:
+#         true_t_mu_array = t_mu_sigmoid_array
+#         true_t_sigma_array = t_sigma_sigmoid_array
+#         true_tc_type = 'sigmoid'
+#
+#     ### LOOP OVER THE FIT N's
+#     for k_fit_N in range(n_N):
+#         # k_fit_N=0
+#         # k_true_N=0
+#
+#         # Current N
+#         fit_N = N_array[k_fit_N]
+#
+#         # Creation of the true tuning curve objects
+#         fit_t_mu = fit_t_mu_array[k_fit_N]
+#         fit_t_sigma = fit_t_sigma_array[k_fit_N]
+#         fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
+#         fit_tc_sigma = tuning_curve(fit_tc_type, fit_N, fit_t_sigma, tc_lower_bound_sigma,
+#                                     tc_upper_bound_sigma)
+#
+#         if fit_scheme.find('ppc') != -1:
+#             fit_tc = [fit_tc_mu, fit_tc_sigma]
+#         elif fit_scheme.find('dpc') != -1:
+#             fit_tc = [fit_tc_mu]
+#         elif fit_scheme.find('rate') != -1:
+#             fit_tc = []
+#
+#         ### LOOP OVER THE SUBJECTS
+#         for k_subject in range(n_subjects):
+#             # k_subject = 0
+#
+#             ### LOOP OVER N_true
+#             for k_true_N in range(n_N):
+#                 true_N = N_array[k_true_N]
+#                 # Creation of the true tuning curve objects
+#                 true_t_mu = true_t_mu_array[k_true_N]
+#                 true_t_sigma = true_t_sigma_array[k_true_N]
+#                 true_tc_mu = tuning_curve(true_tc_type, true_N, true_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
+#                 true_tc_sigma = tuning_curve(true_tc_type, true_N, true_t_sigma, tc_lower_bound_sigma,
+#                                              tc_upper_bound_sigma)
+#
+#                 if true_scheme.find('ppc') != -1:
+#                     true_tc = [true_tc_mu, true_tc_sigma]
+#                 elif true_scheme.find('dpc') != -1:
+#                     true_tc = [true_tc_mu]
+#                 elif true_scheme.find('rate') != -1:
+#                     true_tc = []
+#
+#                 ### LOOP OVER THE W's
+#                 for k_population_fraction, k_subpopulation_fraction in itertools.product(range(n_population_fraction),
+#                                                                                          range(n_subpopulation_fraction)):
+#
+#                     # k_population_fraction = 0
+#                     # k_subpopulation_fraction = 0
+#
+#                     # Current weights
+#                     # Fraction of each neural population
+#                     population_fraction = neural_proba.get_population_fraction(true_scheme)
+#                     n_population = len(population_fraction)
+#
+#                     # Fraction of each neural subpopulation
+#                     # No rate coding here
+#                     subpopulation_fraction = neural_proba.get_subpopulation_fraction(n_population, true_N)
+#
+#                     # Generate the data from the voxel
+#                     true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction,
+#                                        [true_tc_mu, true_tc_sigma])
+#                     n_true_features = n_population * true_N
+#                     weights_tmp = np.reshape(true_voxel.weights, (n_true_features,))
+#
+#                     ### LOOP OVER THE SESSIONS : simulating the response
+#                     for k_session in range(n_sessions):
+#                             # We use X to compute y order to save some computation time
+#                             # Temporary variables to lighten the reading
+#                             X_tmp = X[k_true_scheme][k_true_N][k_subject][k_session]
+#                             y_tmp = np.dot(X_tmp, weights_tmp)
+#                             # Noise injection
+#                             y_tmp = y_tmp + noise_coeff*np.random.normal(0, 1, len(y_tmp))
+#
+#                             # Allocation of the tensor
+#                             y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject][
+#                                 k_session] = y_tmp
+#
+#                         # else:    # We need to compute the response independently from the regressors
+#                         #     # Get the data of interest
+#                         #     mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
+#                         #     sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+#                         #     dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
+#                         #
+#                         #     # Formatting
+#                         #     simulated_distrib = [None for k in range(n_stimuli)]
+#                         #     for k in range(n_stimuli):
+#                         #         # Normalization of the distribution
+#                         #         norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
+#                         #         simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
+#                         #
+#                         #     # Creation of experiment object
+#                         #     exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
+#                         #                      simulated_distrib)
+#                         #
+#                         #     true_activity = true_voxel.generate_activity(simulated_distrib)
+#                         #     signal, scan_signal, name, stim = simu_fmri.get_bold_signal(exp, true_activity, hrf_model, 1)
+#                         #     y[k_session] = scan_signal
+#
+#                     # Z-scoring of y
+#                     y_mean = np.mean(np.concatenate(np.asarray(y[k_true_scheme][k_population_fraction]
+#                                                                [k_subpopulation_fraction][k_true_N][k_subject]),
+#                                                     axis=0))
+#                     y_sd = np.std(np.concatenate(np.asarray(y[k_true_scheme][k_population_fraction]
+#                                                                [k_subpopulation_fraction][k_true_N][k_subject]),
+#                                                  axis=0))
+#                     # Allocation of the weight tensor
+#                     weights[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N] \
+#                         = weights_tmp
+#
+#                     for k_session in range(n_sessions):
+#                         yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
+#                         [k_session] = y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N]
+#                         [k_subject][k_session] - y_mean    # Centering
+#                         yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
+#                         [k_session] = y[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N]
+#                         [k_subject][k_session]/y_sd    # Standardization
+#
+#                     ### End of z-scoring of y
+#
+#
+#                     ### BEGINNING OF THIRS LOOP OVER SESSIONS (CROSS-VALIDATION)
+#                     # Current cross-validation matrice and response
+#                     X_cv = Xz[k_fit_scheme][k_fit_N][k_subject]
+#                     y_cv = yz[k_true_scheme][k_population_fraction][k_subpopulation_fraction][k_true_N][k_subject]
+#                     for k_session in range(n_sessions):
+#                         X_train = np.concatenate(np.asarray(X_cv[:k_session]+Xz[k_session+1:]), axis=0)
+#                         y_train = np.concatenate(np.asarray(y_cv[:k_session]+y_cv[k_session+1:]), axis=0)
+#                         X_test = X_cv[k_session]
+#                         y_test = y_cv[k_session]
+#                         # Create linear regression object
+#                         regr = linear_model.LinearRegression(fit_intercept=True)
+#
+#                         # Train the model using the training set
+#                         regr.fit(X_train, y_train)
+#                         # Make predictions using the testing set
+#                         y_pred = regr.predict(X_test)
+#                         # mse[block] = mean_squared_error(y_test, y_pred)
+#                         # Updates the big tensor
+#                         r2[k_fit_scheme, k_fit_N, k_true_N, k_population_fraction, k_subpopulation_fraction, k_subject, k_session] \
+#                             = r2_score(y_test, y_pred)
+#                         # print('R2 = '+str(r2_score(y_test, y_pred)))
+#                         # # The coefficients
+#                         # print('True coefficients: \n', true_voxel.weights)
+#                         # print('Fitted coefficients: \n', regr.coef_)
+#                         with open("output/results/Output.txt", "w") as text_file:
+#                             text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
+#                                 k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+#                                 r2_score(y_test, y_pred)))
+#                         print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
+#                                 k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+#                                 r2_score(y_test, y_pred)))
+#                         a=1
+#
+# np.save('output/results/r2_snr0.npy', r2)
+#
+# # column_labels = ['Rate', 'PPC', 'DPC']
+# # row_labels = ['True rate', 'True PPC', 'True DPC']
+# # data = r2_mean
+# #
+# # fig, ax = plt.subplots()
+# # heatmap = ax.pcolor(data, cmap=plt.cm.Blues, vmin=0, vmax=1)
+# #
+# # # put the major ticks at the middle of each cell
+# # ax.set_xticks(np.arange(data.shape[1]) + 0.5, minor=False)
+# # ax.set_yticks(np.arange(data.shape[0]) + 0.5, minor=False)
+# #
+# # # want a more natural, table-like display
+# # ax.invert_yaxis()
+# # ax.xaxis.tick_top()
+# #
+# # ax.set_xticklabels(column_labels, minor=False)
+# # ax.set_yticklabels(row_labels, minor=False)
+# # cbar = fig.colorbar(heatmap, ticks=[0, 1])
+# # plt.show()
