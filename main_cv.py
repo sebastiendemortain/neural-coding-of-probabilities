@@ -5,7 +5,7 @@ from scipy import io as sio
 from scipy import stats
 import numpy as np
 #import decimal
-import matplotlib
+# import matplotlib
 # matplotlib.use('Agg')    # To avoid bugs
 # import matplotlib.pyplot as plt
 import pickle
