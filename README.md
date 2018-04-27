@@ -6,3 +6,5 @@ This contains the code related to my master thesis project about the characteriz
 - neural_proba.py : contains main classes and functions useful for sequential data importation, activity/BOLD conversion. 
 - plot_hrf.py : sandbox to play with nistats modules. 
 - utils.py : some functions collected online useful for general objects handling. 
+
+The data shall be placed in the data/simu folders. One trivial run example is available here. 
