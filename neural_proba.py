@@ -1,6 +1,6 @@
 import random as rand
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy import stats
 from scipy import integrate
 from nistats import hemodynamic_models
