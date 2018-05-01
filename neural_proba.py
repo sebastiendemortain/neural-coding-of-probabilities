@@ -53,35 +53,46 @@ class tuning_curve:
     '''
 
     # Initialization of the tuning curve attributes
-    def __init__(self, tc_type, N, t, lower_bound, upper_bound):
+    def __init__(self, tc_type, N, t, lower_bound, upper_bound, percentiles=np.full(100, np.inf)):
         self.tc_type = tc_type
         self.N = N
         self.t = t
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        self.percentiles = percentiles
 
     #Returns the value in x of tuning curve of index i
     def f(self, x, i):
         if (self.tc_type=='gaussian'):
-            # Spacing between each tuning curve
-            delta_mu = (self.upper_bound-self.lower_bound)/(self.N-1)
-            # Mean of the tuning curve
-            mean = self.lower_bound+i*delta_mu
+            if np.isinf(self.percentiles[0]):    # No percentile is specified : regular spacing between tuning curves
+                # Spacing between each tuning curve
+                delta_mean = (self.upper_bound-self.lower_bound)/(self.N-1)
+                # Mean of the tuning curve
+                mean = self.lower_bound+i*delta_mean
+            else:    # Find the percentile related to the i-th tuning curve
+                idx = int((len(self.percentiles)-1)*i/(self.N-1))
+                mean = self.percentiles[idx]
             # Variance of the tuning curve
             sigma2_f = self.t**2
             tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
             return tc_value
         elif (self.tc_type=='sigmoid'):
-            # Spacing between each tuning curve
             n = self.N/2    # Number of tuning curve of the same monotony
-            delta_mu = (self.upper_bound-self.lower_bound)/(n-1)
+            i_eff = i % n    # Effective index (index within the tuning curve family of same monotony)
+            if np.isinf(self.percentiles[0]):    # No percentile is specified : regular spacing between tuning curves
+                # Equal spacing between each tuning curve
+                delta_mean = (self.upper_bound-self.lower_bound)/(n-1)
+                # Mean of the tuning curve
+                mean = self.lower_bound+i_eff*delta_mean
+            else:    # Find the percentile related to the i_eff-th tuning curve
+                idx = int((len(self.percentiles)-1)*i/(self.N-1))
+                mean = self.percentiles[idx]
+
             # Mean of the tuning curve
             if i<n:    # Increasing sigmoids
-                mu = self.lower_bound+i*delta_mu
-                tc_value = 1/(1+np.exp(-(x-mu)/self.t))
-            else: # Decreasing sigmoids
-                mu = self.lower_bound + (i-n) * delta_mu
-                tc_value = 1 / (1 + np.exp((x - mu) / self.t))
+                tc_value = 1/(1+np.exp(-(x-mean)/self.t))
+            else:    # Decreasing sigmoids
+                tc_value = 1 / (1 + np.exp((x - mean)/self.t))
             return tc_value
 
         return

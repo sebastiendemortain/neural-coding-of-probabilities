@@ -84,12 +84,25 @@ eps = 1e-5  # For floating points issues
 
 between_stimuli_duration = 1.3
 initial_time = between_stimuli_duration + eps
-final_time = between_stimuli_duration * (n_stimuli + 1) + eps
-stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli) # tous les 15 essais +-3 essais : une interruption de 8-12s
+final_time_tmp = between_stimuli_duration * (n_stimuli + 1) + eps
+# Every 15+-3 trials : one interruption of 8-12s
+stimulus_onsets = np.linspace(initial_time, final_time_tmp, n_stimuli)
+# We add some time to simulate breaks
+stimulus = 0
+
+while True:
+    # Number of regularly spaced stimuli
+    n_local_regular_stimuli = rand.randint(12, 18)
+    stimulus_shifted = stimulus + n_local_regular_stimuli    # Current stimulus before the break
+    if stimulus_shifted > n_stimuli:    # The next break is supposed to occur after all stimuli are shown
+        break
+    stimulus_onsets[stimulus_shifted:] += rand.randint(8, 12) - between_stimuli_duration    # We consider a break of 8-12s
+    stimulus = stimulus_shifted
+
 stimulus_durations = 0.01 * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 
 # fMRI information
-
+final_time = stimulus_onsets[-1]
 final_frame_offset = 10  # Frame recording duration after the last stimulus has been shown
 initial_frame_time = 0
 final_frame_time = final_time + final_frame_offset
