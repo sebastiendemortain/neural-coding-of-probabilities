@@ -46,21 +46,21 @@ p1g2_sd = p1g2_sd[0]
 
 # To get the percentiles
 
-# fig = plt.figure()
-# plt.hist(all_sigma, bins=100)
-# plt.title("Sigma histogram")
-# plt.xlabel("Sigma")
-# plt.ylabel("Frequency")
-# plt.show()
+fig = plt.figure()
+plt.hist(-np.log(all_sigma), bins=100)
+plt.title("Sigma histogram")
+plt.xlabel("Sigma")
+plt.ylabel("Frequency")
+plt.show()
 
 mu_percentiles = np.percentile(all_mu, np.linspace(0, 100, 100))
 
-# fig = plt.figure()
-# plt.hist(all_mu, bins=100)
-# plt.title("Mu histogram")
-# plt.xlabel("Mu")
-# plt.ylabel("Frequency")
-# plt.show()
+fig = plt.figure()
+plt.hist(all_mu, bins=100)
+plt.title("Mu histogram")
+plt.xlabel("Mu")
+plt.ylabel("Frequency")
+plt.show()
 
 sigma_percentiles = np.percentile(all_sigma, np.linspace(0, 100, 100))
 
@@ -732,27 +732,27 @@ title_fontsize = 20
 #
 # #############
 #
-# # Plot the optimal tuning curves
-#
-# fig = plt.figure()
-# x = np.linspace(tc_lower_bound_mu,tc_upper_bound_mu,1000)
-# plt.subplot(211)
-# for i in range(0, N_mu):
-#     plt.plot(x, tc_mu.f(x, i))
-#
-# plt.xlabel('Preferred probability')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
-#
-# plt.subplot(212)
-# x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
-# for i in range(0, N_sigma):
-#     plt.plot(x, tc_sigma.f(x, i))
-#
-# plt.xlabel('Preferred standard deviation')
-# plt.ylabel('Tuning curve value')
-# plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
-# plt.show()
+# Plot the optimal tuning curves
+
+fig = plt.figure()
+x = np.linspace(tc_lower_bound_mu,tc_upper_bound_mu,1000)
+plt.subplot(211)
+for i in range(0, N_mu):
+    plt.plot(x, tc_mu.f(x, i))
+
+plt.xlabel('Preferred probability')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
+
+plt.subplot(212)
+x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
+for i in range(0, N_sigma):
+    plt.plot(x, tc_sigma.f(x, i))
+
+plt.xlabel('Preferred standard deviation')
+plt.ylabel('Tuning curve value')
+plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+plt.show()
 # #
 # #
 # # Find the optimal tuning curves' standard deviation for fixed N : we consider the lowest std such that the sum over the TC is constant
@@ -796,7 +796,7 @@ title_fontsize = 20
 
 ### SECOND SOLUTION : WE COMPUTE THE VARIANCE OF THE ACTIVITY VECTOR FOR SEVERAL MU'S
 
-tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15, 0.2, 0.25]    # The different std
+tested_t = np.linspace(1e-3, 1e-1, 1000)#[5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15, 0.2, 0.25]    # The different std
 x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
 tc_var = np.zeros(len(tested_t))    # Initialization of the variance vector
 

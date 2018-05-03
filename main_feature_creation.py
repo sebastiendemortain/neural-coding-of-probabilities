@@ -52,12 +52,6 @@ tc_upper_bound_sigma = 0.35
 # The number of N to be tested
 n_N = len(N_array)
 
-# The number of population fraction tested (related to W)
-n_population_fraction = 1
-
-# The number of subpopulation fraction tested (related to W)
-n_subpopulation_fraction = 1
-
 # The number of subjects
 n_subjects = 20
 
@@ -120,13 +114,6 @@ frame_times = simu_fmri.frame_times
 hrf_model = 'spm'    # No fancy hrf model
 fmri_gain = 1    # Amplification of the signal
 noise_coeff = 0
-
-# The quantity to be computed during the cross validation
-r2 = np.zeros((n_schemes, n_N, n_N, n_population_fraction, n_subpopulation_fraction, n_subjects, n_sessions))
-
-# Cross-validation parameters
-n_train = n_sessions - 1
-n_test = 1
 
 # Initialization of the design matrices and their zscore versions
 X = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]

@@ -33,7 +33,7 @@ rand.seed(5);
 
 # The parameters related to the scheme
 scheme_array = ['gaussian_ppc', 'sigmoid_ppc', 'gaussian_dpc', 'sigmoid_dpc']
-n_schemes = 1 #len(scheme_array)
+n_schemes = len(scheme_array)
 
 # The parameters related to the tuning curves to be explored
 N_array = np.array([6, 8, 10, 14, 16, 20])
@@ -73,23 +73,36 @@ distrib_type = 'HMM'
 # Load the corresponding data
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
-# # Just for now
-n_subjects = 2
-n_sessions = 4
-n_N = 3
-n_schemes = 1
+# # # Just for now
+# n_subjects = 2
+# n_sessions = 4
+# n_N = 3
+# n_schemes = 1
 
 # Experimental design information
 eps = 1e-5  # For floating points issues
 
 between_stimuli_duration = 1.3
 initial_time = between_stimuli_duration + eps
-final_time = between_stimuli_duration * (n_stimuli + 1) + eps
-stimulus_onsets = np.linspace(initial_time, final_time, n_stimuli) # tous les 15 essais +-3 essais : une interruption de 8-12s
+final_time_tmp = between_stimuli_duration * (n_stimuli + 1) + eps
+# Every 15+-3 trials : one interruption of 8-12s
+stimulus_onsets = np.linspace(initial_time, final_time_tmp, n_stimuli)
+# We add some time to simulate breaks
+stimulus = 0
+
+while True:
+    # Number of regularly spaced stimuli
+    n_local_regular_stimuli = rand.randint(12, 18)
+    stimulus_shifted = stimulus + n_local_regular_stimuli    # Current stimulus before the break
+    if stimulus_shifted > n_stimuli:    # The next break is supposed to occur after all stimuli are shown
+        break
+    stimulus_onsets[stimulus_shifted:] += rand.randint(8, 12) - between_stimuli_duration    # We consider a break of 8-12s
+    stimulus = stimulus_shifted
+
 stimulus_durations = 0.01 * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 
 # fMRI information
-
+final_time = stimulus_onsets[-1]
 final_frame_offset = 10  # Frame recording duration after the last stimulus has been shown
 initial_frame_time = 0
 final_frame_time = final_time + final_frame_offset
@@ -106,17 +119,15 @@ simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
 frame_times = simu_fmri.frame_times
 hrf_model = 'spm'    # No fancy hrf model
 fmri_gain = 1    # Amplification of the signal
-noise_coeff = 0
+# SNR as defined by ||signal||²/(||signal||²+||noise||²)
+snr = 0.4
 
 # The quantity to be computed during the cross validation
-r2 = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
-
-# Cross-validation parameters
-n_train = n_sessions - 1
-n_test = 1
+r2_test = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
+r2_train = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
 
 # # Load the design matrices
-with open("output/design_matrices/X_par.txt", "rb") as fp:   # Unpickling
+with open("output/design_matrices/X_20sub.txt", "rb") as fp:   # Unpickling
     X = pickle.load(fp)
 
 # Z-SCORING
@@ -269,6 +280,7 @@ for k_fit_scheme in range(n_schemes):
                                 X_tmp = copy.deepcopy(X[k_true_scheme][k_true_N][k_subject][k_session])
                                 y_tmp = copy.deepcopy(np.dot(X_tmp, weights_tmp))
                                 # Noise injection
+                                noise_coeff = np.sqrt(1/len(y_tmp)*np.linalg.norm(y_tmp)**2*(1/snr-1))
                                 y_tmp = copy.deepcopy(y_tmp + noise_coeff*np.random.normal(0, 1, len(y_tmp)))
 
                                 # Allocation of the tensor
@@ -340,10 +352,11 @@ for k_fit_scheme in range(n_schemes):
                             y_pred = regr.predict(X_test)
                             # mse[block] = mean_squared_error(y_test, y_pred)
                             # Updates the big tensor
-                            r2[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
+                            r2_test[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
                                 = r2_score(y_test, y_pred)
                             y_hat_train = regr.predict(X_train)
-                            r2_train = r2_score(y_train, y_hat_train)
+                            r2_train[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
+                                = r2_score(y_train, y_hat_train)
 
                             # print('R2 = '+str(r2_score(y_test, y_pred)))
                             # # The coefficients
@@ -357,13 +370,14 @@ for k_fit_scheme in range(n_schemes):
                             #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
                             #         r2_score(y_test, y_pred), r2_train))
                             a=1
-                            # r2 < 0
+                            #if r2 < 0
                         # print("Fraction counter : " + str(fraction_counter))
                         # print("Population :"+ str(population_fraction) + ", Sparsity : "+ str(subpopulation_sparsity_exp))
                         fraction_counter += 1
 
 
-np.save('output/results/r2_snr0.npy', r2)
+np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
+np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
 
 # column_labels = ['Rate', 'PPC', 'DPC']
 # row_labels = ['True rate', 'True PPC', 'True DPC']
