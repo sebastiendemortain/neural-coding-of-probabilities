@@ -25,11 +25,15 @@ from neural_proba import tuning_curve
 from neural_proba import voxel
 from neural_proba import experiment
 from neural_proba import fmri
+name = 'rho_test_snr0.1'
+k_scheme = 3
+snr = float(name[-3:])
 
-r2 = np.load('output/results/r2_test_snr0.4.npy')
+r2 = np.load('output/results/'+name+'.npy')
 
 scheme_array = ['gaussian_ppc', 'sigmoid_ppc', 'gaussian_dpc', 'sigmoid_dpc']
 N_array = np.array([6, 8, 10, 14, 16, 20])
+scheme = scheme_array[k_scheme]
 
 
 n_N = len(N_array)
@@ -37,8 +41,6 @@ n_fractions = 20
 n_subjects = 20
 n_sessions = 4
 n_schemes = len(scheme_array)
-
-scheme = 'sigmoid_ppc'
 
 # r2_1 = r2[:, :, :, 0, :, :]
 # r2_1 = np.median(r2_1, axis=(3, 4))
@@ -74,9 +76,7 @@ ax.set_xticklabels(column_labels, minor=False, fontsize=fontsize)
 ax.set_yticklabels(row_labels, minor=False, fontsize=fontsize)
 ax.set_ylabel('N_fit', fontsize=fontsize)
 ax.set_xlabel('N_true', fontsize=fontsize)
-plt.title('Results of simulation 1 for '+scheme, y=1.08, fontsize=20)
+plt.title(scheme+', SNR='+str(snr), y=1.08, fontsize=20)
 cbar = fig.colorbar(heatmap, ticks=[0, 1])
-plt.show()
-
-print(data[1, 4])
-a=1
+plt.savefig('output/figures/'+name+scheme+'.eps', format='eps', dpi=1000)
+#plt.show()

@@ -3,6 +3,7 @@ import scipy
 import random as rand
 from scipy import io as sio
 from scipy import stats
+from scipy.stats.stats import pearsonr
 import numpy as np
 #import decimal
 # import matplotlib
@@ -120,11 +121,13 @@ frame_times = simu_fmri.frame_times
 hrf_model = 'spm'    # No fancy hrf model
 fmri_gain = 1    # Amplification of the signal
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
-snr = 0.4
+snr = 0.1
 
 # The quantity to be computed during the cross validation
 r2_test = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
 r2_train = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
+rho_test = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
+rho_train = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
 
 # # Load the design matrices
 with open("output/design_matrices/X_20sub.txt", "rb") as fp:   # Unpickling
@@ -352,11 +355,13 @@ for k_fit_scheme in range(n_schemes):
                             y_pred = regr.predict(X_test)
                             # mse[block] = mean_squared_error(y_test, y_pred)
                             # Updates the big tensor
-                            r2_test[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
-                                = r2_score(y_test, y_pred)
+                            # r2_test[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
+                            #     = r2_score(y_test, y_pred)
                             y_hat_train = regr.predict(X_train)
-                            r2_train[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
-                                = r2_score(y_train, y_hat_train)
+                            # r2_train[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] \
+                            #     = r2_score(y_train, y_hat_train)
+                            rho_train[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] = pearsonr(y_train, y_hat_train)[0]
+                            rho_test[k_fit_scheme, k_fit_N, k_true_N, fraction_counter, k_subject, k_session] = pearsonr(y_pred, y_test)[0]
 
                             # print('R2 = '+str(r2_score(y_test, y_pred)))
                             # # The coefficients
@@ -376,8 +381,10 @@ for k_fit_scheme in range(n_schemes):
                         fraction_counter += 1
 
 
-np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
-np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
+# np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
+# np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
+np.save('output/results/rho_test_snr'+str(snr)+'.npy', rho_test)
+np.save('output/results/rho_train_snr'+str(snr)+'.npy', rho_train)
 
 # column_labels = ['Rate', 'PPC', 'DPC']
 # row_labels = ['True rate', 'True PPC', 'True DPC']
