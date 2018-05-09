@@ -40,34 +40,34 @@ p1g2_dist = p1g2_dist[0]
 all_mu = np.concatenate(p1g2_mu).ravel()    # All values of mu (for percentiles)
 p1g2_mu = p1g2_mu[0]
 
-all_sigma = np.concatenate(p1g2_sd).ravel()    # All values of sigma (for percentiles)
+all_conf = -np.log(np.concatenate(p1g2_sd).ravel())    # All values of conf (for percentiles)
 p1g2_sd = p1g2_sd[0]
 
 
 # To get the percentiles
 
-fig = plt.figure()
-plt.hist(-np.log(all_sigma), bins=100)
-plt.title("Sigma histogram")
-plt.xlabel("Sigma")
-plt.ylabel("Frequency")
-plt.show()
+# fig = plt.figure()
+# plt.hist(all_conf, bins=100)
+# plt.title("Confidence histogram")
+# plt.xlabel("Confidence")
+# plt.ylabel("Frequency")
+# plt.show()
 
 mu_percentiles = np.percentile(all_mu, np.linspace(0, 100, 100))
 
-fig = plt.figure()
-plt.hist(all_mu, bins=100)
-plt.title("Mu histogram")
-plt.xlabel("Mu")
-plt.ylabel("Frequency")
-plt.show()
+# fig = plt.figure()
+# plt.hist(all_mu, bins=100)
+# plt.title("Mu histogram")
+# plt.xlabel("Mu")
+# plt.ylabel("Frequency")
+# plt.show()
 
-sigma_percentiles = np.percentile(all_sigma, np.linspace(0, 100, 100))
+conf_percentiles = np.percentile(all_conf, np.linspace(0, 100, 100))
 
 # fig = plt.figure()
-# plt.hist(sigma_percentiles, bins=100)
-# plt.title("Sigma histogram")
-# plt.xlabel("Sigma")
+# plt.hist(conf_percentiles, bins=100)
+# plt.title("Confidence histogram")
+# plt.xlabel("Confidence")
 # plt.ylabel("Frequency")
 # plt.show()
 
@@ -79,23 +79,23 @@ sigma_percentiles = np.percentile(all_sigma, np.linspace(0, 100, 100))
 
 # Generate data from beta distributions samples from means and std
 n_mu = 30    # Number of generated means
-n_sigma = 30    # Number of generated standard deviations
+n_conf = 30    # Number of generated standard deviations
 mu = np.linspace(0.1, 0.9, n_mu)
-sigma = np.linspace(0.04, 0.14, n_sigma)    # We don't go to the max to have bell shaped beta
+conf = np.linspace(1.5, 2.6, n_conf)    # We don't go to the max to have bell shaped beta
 
 # Creation of a list of simulated distributions
-simulated_distrib = [[None for j in range(n_sigma)] for i in range(n_mu)]
+simulated_distrib = [[None for j in range(n_conf)] for i in range(n_mu)]
 
 for k_mu in range(n_mu):
-    for k_sigma in range(n_sigma):
-        simulated_distrib[k_mu][k_sigma] = distrib(mu[k_mu], sigma[k_sigma])
+    for k_conf in range(n_conf):
+        simulated_distrib[k_mu][k_conf] = distrib(mu[k_mu], conf[k_conf])
 
 # # Plots the distribution
 # fig = plt.figure()
 # k_mu = -1
-# k_sigma = -1
+# k_conf = -1
 # x = np.linspace(0, 1, 100)
-# y = simulated_distrib[k_mu][k_sigma].beta(x)
+# y = simulated_distrib[k_mu][k_conf].beta(x)
 # plt.plot(x, y)    # Full distribution
 # plt.show()
 
@@ -105,7 +105,7 @@ plot_resolution = n_mu    # we consider the same resolution as for DPC
 # we define the x-axis for varying mean
 x_mu = np.linspace(np.min(mu), np.max(mu), plot_resolution)
 # we define the x-axis for varying uncertainty
-x_sigma = np.linspace(np.min(sigma), np.max(sigma), plot_resolution)
+x_conf = np.linspace(np.min(conf), np.max(conf), plot_resolution)
 
 # # We remove the infinite values
 # inf_indices = [0, 1, 205, 206, 207, 208, 299]
@@ -123,45 +123,46 @@ x_sigma = np.linspace(np.min(sigma), np.max(sigma), plot_resolution)
 
 
 # We find the variance of the data in order to scale equally activity from mean and activity from uncertainty
-mu_sd = 0.2    # Variance of the signal of mu's
-sigma_sd = 0.043    # Variance of the signal of sigma's
+mu_sd = 0.199    # Variance of the signal of mu's
+conf_sd = 0.268    # Variance of the signal of conf's
 
 # Lower and upper bounds of the encoded summary quantity (for tuning curves)
 tc_lower_bound_mu = 0
 tc_upper_bound_mu = 1
-tc_lower_bound_sigma = 0.04
+tc_lower_bound_conf = 1.1
 # we define the upper bound to be a bit away from the highest uncertainty
-tc_upper_bound_sigma = 0.35
+tc_upper_bound_conf = 2.6
 
 # Optimal t for each N
-k_N = 2
-N_array = np.array([6, 8, 10, 14, 16, 20])
-t_mu_sigmoid_array = np.array([9e-2, 6e-2, 5e-2, 4e-2, 3e-2, 3e-2])
-t_sigma_sigmoid_array = np.array([3e-2, 2e-2, 2e-2, 1.5e-2, 1e-2, 8e-3])
+k_N = 6
+N_array = np.array([2, 4, 6, 8, 10, 14, 20])
 
-t_mu_gaussian_array = np.array([1e-1, 8e-2, 0.15])#5e-2, 3.5e-2, 3e-2, 2.5e-2])
-t_sigma_gaussian_array = np.array([3e-2, 2e-2, 1.7e-2, 1.2e-2, 1e-2, 8e-3])
+t_mu_gaussian_array = np.array([0.15, 0.1, 7e-2, 5e-2, 4e-2, 3e-2, 2e-2])
+t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
+
+t_mu_sigmoid_array = np.sqrt(2*np.pi)/4*t_mu_gaussian_array
+t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
 
 # fig = plt.figure()
 # plt.plot(N_array, t_mu_sigmoid_array, label='mu sigmoid')
-# plt.plot(N_array, t_sigma_sigmoid_array, label='sigma sigmoid')
+# plt.plot(N_array, t_conf_sigmoid_array, label='conf sigmoid')
 # plt.plot(N_array, t_mu_gaussian_array, label='mu gaussian')
-# plt.plot(N_array, t_sigma_gaussian_array, label='sigma gaussian')
+# plt.plot(N_array, t_conf_gaussian_array, label='conf gaussian')
 #
 # plt.legend()
 #
 # plt.show()
 
 
-k_scheme = 0
+k_scheme = 1
 scheme_array = ['gaussian', 'sigmoid']
 
 if scheme_array[k_scheme]=='gaussian':
     t_mu_array = t_mu_gaussian_array
-    t_sigma_array = t_sigma_gaussian_array
+    t_conf_array = t_conf_gaussian_array
 elif scheme_array[k_scheme]=='sigmoid':
     t_mu_array = t_mu_sigmoid_array
-    t_sigma_array = t_sigma_sigmoid_array
+    t_conf_array = t_conf_sigmoid_array
 
 
 ###
@@ -187,7 +188,7 @@ subpopulation_fraction = np.ones((2, 1))
 rate_voxel = voxel(coding_scheme, population_fraction, subpopulation_fraction)
 
 # Computes the signal
-rate_activity = rate_voxel.generate_activity(simulated_distrib, mu_sd, sigma_sd)
+rate_activity = rate_voxel.generate_activity(simulated_distrib, mu_sd, conf_sd)
 
 ### 2) PPC simulation
 
@@ -199,21 +200,21 @@ tc_type_mu = scheme_array[k_scheme]    # Tuning curve type
 N_mu = N_array[k_N]    # Number of tuning curves
 t_mu = t_mu_array[k_N]    # The best value from the previous "sum" analysis
 # Creates the tuning_curve object
-tc_mu = tuning_curve(tc_type_mu, N_mu, t_mu, tc_lower_bound_mu, tc_upper_bound_mu, mu_percentiles)
+tc_mu = tuning_curve(tc_type_mu, N_mu, t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
 
 # TC related to the uncertainty
-tc_type_sigma = scheme_array[k_scheme]    # Tuning curve type
-N_sigma = N_array[k_N]    # Number of tuning curves
-t_sigma = t_sigma_array[k_N]    # The best value from the previous "sum" analysis
+tc_type_conf = scheme_array[k_scheme]    # Tuning curve type
+N_conf = N_array[k_N]    # Number of tuning curves
+t_conf = t_conf_array[k_N]    # The best value from the previous "sum" analysis
 # Creates the tuning_curve object
-tc_sigma = tuning_curve(tc_type_sigma, N_sigma, t_sigma, tc_lower_bound_sigma, tc_upper_bound_sigma, sigma_percentiles)
+tc_conf = tuning_curve(tc_type_conf, N_conf, t_conf, tc_lower_bound_conf, tc_upper_bound_conf)
 
-# Subpopulation fraction random creation (we assume N_mu=N_sigma)
+# Subpopulation fraction random creation (we assume N_mu=N_conf)
 subpopulation_fraction = neural_proba.get_subpopulation_fraction(len(population_fraction),
                                                                  N_mu)
 
 # Creation of the "ppc voxel"
-ppc_voxel = voxel(coding_scheme, population_fraction, subpopulation_fraction, [tc_mu, tc_sigma])
+ppc_voxel = voxel(coding_scheme, population_fraction, subpopulation_fraction, [tc_mu, tc_conf])
 
 # Computes the signal
 ppc_activity = ppc_voxel.generate_activity(simulated_distrib)
@@ -246,8 +247,8 @@ title_fontsize = 20
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax.plot(x_mu, rate_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax.plot(x_mu, rate_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # utils.plot_detail(fig, ax, 'p(head)', 'Activity (AU)', xtick_fontsize, xfontstyle='italic')
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
@@ -260,8 +261,8 @@ title_fontsize = 20
 #
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax.plot(x_mu, ppc_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax.plot(x_mu, ppc_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # utils.plot_detail(fig, ax, 'p(Head)', 'Activity (AU)', xtick_fontsize, xfontstyle='italic')
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
@@ -274,8 +275,8 @@ title_fontsize = 20
 #
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax.plot(x_mu, dpc_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax.plot(x_mu, dpc_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # utils.plot_detail(fig, ax, 'p(Head)', 'Activity (AU)', xtick_fontsize, xfontstyle='italic')
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
@@ -288,27 +289,27 @@ title_fontsize = 20
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
-#     ax.plot(x_sigma, rate_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax.plot(x_conf, rate_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
 # ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
 # # ax_rate_mu.get_xaxis().set_ticks([])
 # utils.plot_detail(fig, ax, 'Uncertainty (s.d)', 'Activity (AU)', xtick_fontsize)
 #
-# plt.savefig('output/figures/rate_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/rate_conf.png', bbox_inches='tight')
 #
 # plt.show()
 #
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
-#     ax.plot(x_sigma, ppc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax.plot(x_conf, ppc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # utils.plot_detail(fig, ax, 'Uncertainty (s.d)', 'Activity (AU)', xtick_fontsize)
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
 # ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
 # # ax_rate_mu.get_xaxis().set_ticks([])
-# plt.savefig('output/figures/ppc_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/ppc_conf.png', bbox_inches='tight')
 #
 # plt.show()
 #
@@ -316,13 +317,13 @@ title_fontsize = 20
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 # for k_mu in range(0,n_mu,k_jump):
-#     ax.plot(x_sigma, dpc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax.plot(x_conf, dpc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # utils.plot_detail(fig, ax, 'Uncertainty (s.d)', 'Activity (AU)', xtick_fontsize)
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
 # ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
 # # ax_rate_mu.get_xaxis().set_ticks([])
-# plt.savefig('output/figures/dpc_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/dpc_conf.png', bbox_inches='tight')
 #
 # plt.show()
 #
@@ -341,15 +342,15 @@ title_fontsize = 20
 
 
 #
-# width = np.mean(mu)/(2*ppc_voxel.tuning_curve[1].N)*(tc_upper_bound_sigma-tc_lower_bound_sigma)
+# width = np.mean(mu)/(2*ppc_voxel.tuning_curve[1].N)*(tc_upper_bound_conf-tc_lower_bound_conf)
 #
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
-# x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, ppc_voxel.tuning_curve[1].N)
+# x = np.linspace(tc_lower_bound_conf, tc_upper_bound_conf, ppc_voxel.tuning_curve[1].N)
 # ax.bar(x, ppc_voxel.subpopulation_fraction[1], width=width)
 # utils.plot_detail(fig, ax, 'Uncertainty (s.d.)', 'Neural fraction', xtick_fontsize)
 # ax.set_title('Mixture in this voxel', fontsize=20)
-# plt.savefig('output/figures/mixture_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/mixture_conf.png', bbox_inches='tight')
 #
 # plt.show()
 
@@ -358,8 +359,8 @@ title_fontsize = 20
 # ### BEGINNING OF RATE VULGARIZATION PLOTS ###
 #
 # mu = 0.6
-# sigma = 0.1
-# acti = np.array([mu, sigma])
+# conf = 0.1
+# acti = np.array([mu, conf])
 # width = 0.5
 #
 # fig = plt.figure()
@@ -372,7 +373,7 @@ title_fontsize = 20
 # plt.xticks(rotation=45, fontsize=xtick_fontsize)
 # ax.get_yaxis().set_ticks([])
 #
-# plt.savefig('output/figures/rate_example_mu_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/rate_example_mu_conf.png', bbox_inches='tight')
 #
 # plt.show()
 # a=1
@@ -446,8 +447,8 @@ title_fontsize = 20
 
 # mu_point = 0.6
 # tc_mu_point = np.zeros(10)
-# sigma_point = 0.1
-# tc_sigma_point = np.zeros(10)
+# conf_point = 0.1
+# tc_conf_point = np.zeros(10)
 #
 # color_point = [None for i in range(10)]
 # dash_line = [None for i in range(10)]
@@ -480,22 +481,22 @@ title_fontsize = 20
 # fig = plt.figure()
 #
 # ax = plt.subplot(111)
-# x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma, 1000)
-# for i in range(0, N_sigma):
-#     plt.plot(x, tc_sigma.f(x, i), label='Neuron '+str(i+1))
-#     tc_sigma_point[i] = tc_sigma.f(sigma_point, i)
-#     dash_line[i] = ax.plot(sigma_point*np.ones(10), np.linspace(0, tc_sigma_point[i], 10), color=color_point[i],
+# x = np.linspace(tc_lower_bound_conf,tc_upper_bound_conf, 1000)
+# for i in range(0, N_conf):
+#     plt.plot(x, tc_conf.f(x, i), label='Neuron '+str(i+1))
+#     tc_conf_point[i] = tc_conf.f(conf_point, i)
+#     dash_line[i] = ax.plot(conf_point*np.ones(10), np.linspace(0, tc_conf_point[i], 10), color=color_point[i],
 #                            linestyle='--')
-# ax.scatter([sigma_point*np.ones(10)], [np.reshape(tc_sigma_point, (10,))], color=color_point)
+# ax.scatter([conf_point*np.ones(10)], [np.reshape(tc_conf_point, (10,))], color=color_point)
 #
 # ax.set_ylim(0, 1.05)
 # utils.plot_detail(fig, ax, 'Uncertainty (s.d)', 'Firing rate (Hz)', xtick_fontsize, aspect=0.5)
 #
-# # plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+# # plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_conf.N)+')')
 # chartBox = ax.get_position()
 # ax.set_position([chartBox.x0, chartBox.y0, chartBox.width*0.6, chartBox.height])
 # ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8),  shadow=False, ncol=1)
-# plt.savefig('output/figures/tc_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/tc_conf.png', bbox_inches='tight')
 #
 # plt.show()
 #
@@ -516,11 +517,11 @@ title_fontsize = 20
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 # x = [str(i+1) for i in range(10)]
-# ax.bar(x, tc_sigma_point, width=width, color=color_point)
+# ax.bar(x, tc_conf_point, width=width, color=color_point)
 # ax.set_ylim(0, 1.05)
 # utils.plot_detail(fig, ax, 'Uncertainty neuron index', 'Firing rate (Hz)', xtick_fontsize)
 #
-# plt.savefig('output/figures/color_sigma.png', bbox_inches='tight')
+# plt.savefig('output/figures/color_conf.png', bbox_inches='tight')
 #
 # plt.show()
 
@@ -529,17 +530,17 @@ title_fontsize = 20
 #
 # ### BEGINNING OF DPC VULGARIZATION PLOT
 # k_mu = 20
-# k_sigma = 1
+# k_conf = 1
 #
-# dist = simulated_distrib[k_mu][k_sigma]
+# dist = simulated_distrib[k_mu][k_conf]
 # x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu,1000)
 # mu1=0.2
 # mu2=0.6
-# sigma1=0.08
-# sigma2=0.1
+# conf1=0.08
+# conf2=0.1
 # pi1=0.0
 # pi2=1
-# beta = pi1*np.exp(-0.5*(x-mu1)**2/(sigma1**2))+pi2*np.exp(-0.5*(x-mu2)**2/(sigma2**2))
+# beta = pi1*np.exp(-0.5*(x-mu1)**2/(conf1**2))+pi2*np.exp(-0.5*(x-mu2)**2/(conf2**2))
 #
 #
 # # Integration param
@@ -639,12 +640,12 @@ title_fontsize = 20
 # ax_right.spines['left'].set_color('none')
 # ax_right.spines['right'].set_color('none')
 # ax_right.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
-# ax_right.set_xlabel('Inferred standard deviation')
+# ax_right.set_xlabel('Inferred confidence')
 #
 #
 # ax_rate_mu = fig.add_subplot(421)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax_rate_mu.plot(x_mu, rate_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax_rate_mu.plot(x_mu, rate_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # ax_rate_mu.set_ylabel('Signal intensity')
 # ax_rate_mu.set_title('Rate coding signal')
 # ax_rate_mu.legend()
@@ -652,7 +653,7 @@ title_fontsize = 20
 #
 # ax_rate_sd = fig.add_subplot(422)
 # for k_mu in range(0,n_mu,k_jump):
-#     ax_rate_sd.plot(x_sigma, rate_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax_rate_sd.plot(x_conf, rate_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # ax_rate_sd.set_ylabel('Signal intensity')
 # ax_rate_sd.set_title('Rate coding signal')
 # ax_rate_sd.legend()
@@ -660,8 +661,8 @@ title_fontsize = 20
 #
 #
 # ax_ppc_mu = fig.add_subplot(423)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax_ppc_mu.plot(x_mu, ppc_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax_ppc_mu.plot(x_mu, ppc_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # ax_ppc_mu.set_ylabel('Signal intensity')
 # ax_ppc_mu.set_title('PPC signal')
 # ax_ppc_mu.legend()
@@ -669,7 +670,7 @@ title_fontsize = 20
 #
 # ax_ppc_sd = fig.add_subplot(424)
 # for k_mu in range(0, n_mu, k_jump):
-#     ax_ppc_sd.plot(x_sigma, ppc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax_ppc_sd.plot(x_conf, ppc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # ax_ppc_sd.set_ylabel('Signal intensity')
 # ax_ppc_sd.set_title('PPC signal')
 # ax_ppc_sd.legend()
@@ -677,8 +678,8 @@ title_fontsize = 20
 #
 #
 # ax_dpc_mu = fig.add_subplot(425)
-# for k_sigma in range(0,n_sigma,k_jump):
-#     ax_dpc_mu.plot(x_mu, dpc_activity[:, k_sigma], label='uncertainty(s.d.)='+str(round(sigma[k_sigma],2)))
+# for k_conf in range(0,n_conf,k_jump):
+#     ax_dpc_mu.plot(x_mu, dpc_activity[:, k_conf], label='uncertainty(s.d.)='+str(round(conf[k_conf],2)))
 # ax_dpc_mu.set_ylabel('Signal intensity')
 # ax_dpc_mu.set_title('DPC signal')
 # ax_dpc_mu.legend()
@@ -687,7 +688,7 @@ title_fontsize = 20
 #
 # ax_dpc_sd = fig.add_subplot(426)
 # for k_mu in range(0,n_mu,k_jump):
-#     ax_dpc_sd.plot(x_sigma, dpc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
+#     ax_dpc_sd.plot(x_conf, dpc_activity[k_mu, :], label='p(head)='+str(round(mu[k_mu],2)))
 # ax_dpc_sd.set_ylabel('Signal intensity')
 # ax_dpc_sd.set_title('DPC signal')
 # ax_dpc_sd.legend()
@@ -701,23 +702,23 @@ title_fontsize = 20
 # ax_frac_mu.set_ylabel('Fraction')
 # ax_frac_mu.set_title('Neural fraction')
 #
-# width = np.mean(sigma)/(2*ppc_voxel.tuning_curve[1].N)
+# width = np.mean(conf)/(2*ppc_voxel.tuning_curve[1].N)
 #
 # ax_frac_sd = fig.add_subplot(428)
-# x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, ppc_voxel.tuning_curve[1].N)
+# x = np.linspace(tc_lower_bound_conf, tc_upper_bound_conf, ppc_voxel.tuning_curve[1].N)
 # ax_frac_sd.bar(x, ppc_voxel.subpopulation_fraction[1], width=width)
 # ax_frac_sd.set_ylabel('Fraction')
 # ax_frac_sd.set_title('Neural fraction')
 #
 #
 # ax_rate_mu.set_xlim([tc_lower_bound_mu, tc_upper_bound_mu])
-# ax_rate_sd.set_xlim([tc_lower_bound_sigma, tc_upper_bound_sigma])
+# ax_rate_sd.set_xlim([tc_lower_bound_conf, tc_upper_bound_conf])
 # ax_ppc_mu.set_xlim([tc_lower_bound_mu, tc_upper_bound_mu])
-# ax_ppc_sd.set_xlim([tc_lower_bound_sigma, tc_upper_bound_sigma])
+# ax_ppc_sd.set_xlim([tc_lower_bound_conf, tc_upper_bound_conf])
 # ax_dpc_mu.set_xlim([tc_lower_bound_mu, tc_upper_bound_mu])
-# ax_dpc_sd.set_xlim([tc_lower_bound_sigma, tc_upper_bound_sigma])
+# ax_dpc_sd.set_xlim([tc_lower_bound_conf, tc_upper_bound_conf])
 # ax_frac_mu.set_xlim([tc_lower_bound_mu, tc_upper_bound_mu])
-# ax_frac_sd.set_xlim([tc_lower_bound_sigma, tc_upper_bound_sigma])
+# ax_frac_sd.set_xlim([tc_lower_bound_conf, tc_upper_bound_conf])
 #
 # plt.show()
 #
@@ -745,17 +746,17 @@ plt.ylabel('Tuning curve value')
 plt.title('Optimal tuning curves for encoding the mean (N='+str(tc_mu.N)+')')
 
 plt.subplot(212)
-x = np.linspace(tc_lower_bound_sigma,tc_upper_bound_sigma,1000)
-for i in range(0, N_sigma):
-    plt.plot(x, tc_sigma.f(x, i))
+x = np.linspace(tc_lower_bound_conf,tc_upper_bound_conf,1000)
+for i in range(0, N_conf):
+    plt.plot(x, tc_conf.f(x, i))
 
-plt.xlabel('Preferred standard deviation')
+plt.xlabel('Preferred confidence')
 plt.ylabel('Tuning curve value')
-plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_sigma.N)+')')
+plt.title('Optimal tuning curves for encoding the uncertainty (N='+str(tc_conf.N)+')')
 plt.show()
 # #
 # #
-# # Find the optimal tuning curves' standard deviation for fixed N : we consider the lowest std such that the sum over the TC is constant
+# # Find the optimal tuning curves' confidence for fixed N : we consider the lowest std such that the sum over the TC is constant
 #
 # tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15]    # The different std
 # x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
@@ -776,19 +777,19 @@ plt.show()
 # plt.legend()
 
 # tested_t = [1e-3, 5e-3, 1e-2, 2e-2, 3e-2, 5e-2]    # The different std
-# x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
+# x = np.linspace(tc_lower_bound_conf, tc_upper_bound_conf, 1000)
 # tc_sum = np.zeros([len(tested_t), 1000])
 #
 # for k_t in range(len(tested_t)):
-#     tc = tuning_curve(tc_type_sigma, N_sigma, tested_t[k_t], tc_lower_bound_sigma, tc_upper_bound_sigma)
-#     for i in range(N_sigma):
+#     tc = tuning_curve(tc_type_conf, N_conf, tested_t[k_t], tc_lower_bound_conf, tc_upper_bound_conf)
+#     for i in range(N_conf):
 #         tc_sum[k_t, :] += tc.f(x, i)
 #
 # plt.subplot(212)
 # for k_t in range(len(tested_t)):
 #     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
 #
-# plt.xlabel('Standard deviation')
+# plt.xlabel('Confidence')
 # plt.ylabel('Sum over the tuning curves')
 # plt.legend()
 # plt.show()
@@ -796,9 +797,12 @@ plt.show()
 
 ### SECOND SOLUTION : WE COMPUTE THE VARIANCE OF THE ACTIVITY VECTOR FOR SEVERAL MU'S
 
-tested_t = np.linspace(1e-3, 1e-1, 1000)#[5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15, 0.2, 0.25]    # The different std
+# For mu
+
+tested_t = [5e-3, 0.01,0.03,0.05,0.08,0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5] #np.linspace(1e-3, 1e-1, 1000)#    # The different std
 x = np.linspace(tc_lower_bound_mu, tc_upper_bound_mu, 1000)
 tc_var = np.zeros(len(tested_t))    # Initialization of the variance vector
+tc_sum = np.zeros([len(tested_t), 1000])
 
 for k_t in range(len(tested_t)):
     tc_val = np.zeros([1000, N_mu])  # Initialization of the different TC sum's
@@ -806,6 +810,7 @@ for k_t in range(len(tested_t)):
     for i in range(N_mu):
         tc_val[:, i] = tc.f(x, i)
         tc_var[k_t] += np.var(tc_val[i, :])
+        tc_sum[k_t, :] += tc.f(x, i)
     # pca = PCA(n_components=2)
     # pca.fit(tc_val)
     # print(pca.singular_values_)
@@ -817,20 +822,43 @@ plt.xlabel('t')
 plt.ylabel('Sum of variance of the activity vector')
 plt.legend()
 
-tested_t = [1e-3, 5e-3, 1e-2, 2e-2, 3e-2, 5e-2]    # The different std
-x = np.linspace(tc_lower_bound_sigma, tc_upper_bound_sigma, 1000)
+plt.subplot(212)
+for k_t in range(len(tested_t)):
+    plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
+plt.xlabel('Mu')
+plt.ylabel('Sum over the tuning curves')
+plt.legend()
+
+# For conf
+
+tested_t = [1e-2, 2e-2, 3e-2, 5e-2, 1e-1, 2e-1, 3e-1, 4e-1, 5e-1, 8e-1]    # The different std
+x = np.linspace(tc_lower_bound_conf, tc_upper_bound_conf, 1000)
+tc_var = np.zeros(len(tested_t))    # Initialization of the variance vector
 tc_sum = np.zeros([len(tested_t), 1000])
 
 for k_t in range(len(tested_t)):
-    tc = tuning_curve(tc_type_sigma, N_sigma, tested_t[k_t], tc_lower_bound_sigma, tc_upper_bound_sigma, sigma_percentiles)
-    for i in range(N_sigma):
+    tc_val = np.zeros([1000, N_conf])  # Initialization of the different TC sum's
+    tc = tuning_curve(tc_type_conf, N_conf, tested_t[k_t], tc_lower_bound_conf, tc_upper_bound_conf)
+    for i in range(N_conf):
+        tc_val[:, i] = tc.f(x, i)
+        tc_var[k_t] += np.var(tc_val[i, :])
         tc_sum[k_t, :] += tc.f(x, i)
+    # pca = PCA(n_components=2)
+    # pca.fit(tc_val)
+    # print(pca.singular_values_)
+fig = plt.figure()
+plt.subplot(211)
+plt.plot(tested_t, tc_var)
+
+plt.xlabel('t')
+plt.ylabel('Sum of variance of the activity vector')
+plt.legend()
 
 plt.subplot(212)
 for k_t in range(len(tested_t)):
     plt.plot(x, tc_sum[k_t, :], label='t='+str(tested_t[k_t]))
 
-plt.xlabel('Standard deviation')
+plt.xlabel('Confidence')
 plt.ylabel('Sum over the tuning curves')
 plt.legend()
 plt.show()

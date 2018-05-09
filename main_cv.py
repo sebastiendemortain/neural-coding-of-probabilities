@@ -37,18 +37,20 @@ scheme_array = ['gaussian_ppc', 'sigmoid_ppc', 'gaussian_dpc', 'sigmoid_dpc']
 n_schemes = len(scheme_array)
 
 # The parameters related to the tuning curves to be explored
-N_array = np.array([6, 8, 10, 14, 16, 20])
-t_mu_sigmoid_array = np.array([9e-2, 6e-2, 5e-2, 4e-2, 3e-2, 3e-2])
-t_sigma_sigmoid_array = np.array([3e-2, 2e-2, 2e-2, 1.5e-2, 1e-2, 8e-3])
-t_mu_gaussian_array = np.array([1e-1, 8e-2, 5e-2, 3.5e-2, 3e-2, 2.5e-2])
-t_sigma_gaussian_array = np.array([3e-2, 2e-2, 1.7e-2, 1.2e-2, 1e-2, 8e-3])
+N_array = np.array([2, 4, 6, 8, 10, 14, 20])
+
+t_mu_gaussian_array = np.array([0.15, 0.1, 7e-2, 5e-2, 4e-2, 3e-2, 2e-2])
+t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
+
+t_mu_sigmoid_array = np.sqrt(2*np.pi)/4*t_mu_gaussian_array
+t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
 
 # Lower and upper bounds of the encoded summary quantity (for tuning curves)
 tc_lower_bound_mu = 0
 tc_upper_bound_mu = 1
-tc_lower_bound_sigma = 0.04
+tc_lower_bound_conf = 1.1
 # we define the upper bound to be a bit away from the highest uncertainty
-tc_upper_bound_sigma = 0.35
+tc_upper_bound_conf = 2.6
 
 # The number of N to be tested
 n_N = len(N_array)
@@ -183,22 +185,22 @@ for k_fit_scheme in range(n_schemes):
     # We replace the right value of the "t"'s according to the type of tuning curve
     if fit_scheme.find('gaussian') != -1:
         fit_t_mu_array = t_mu_gaussian_array
-        fit_t_sigma_array = t_sigma_gaussian_array
+        fit_t_conf_array = t_conf_gaussian_array
         fit_tc_type = 'gaussian'
 
     elif fit_scheme.find('sigmoid') != -1:
         fit_t_mu_array = t_mu_sigmoid_array
-        fit_t_sigma_array = t_sigma_sigmoid_array
+        fit_t_conf_array = t_conf_sigmoid_array
         fit_tc_type = 'sigmoid'
 
     if true_scheme.find('gaussian') != -1:
         true_t_mu_array = t_mu_gaussian_array
-        true_t_sigma_array = t_sigma_gaussian_array
+        true_t_conf_array = t_conf_gaussian_array
         true_tc_type = 'gaussian'
 
     elif true_scheme.find('sigmoid') != -1:
         true_t_mu_array = t_mu_sigmoid_array
-        true_t_sigma_array = t_sigma_sigmoid_array
+        true_t_conf_array = t_conf_sigmoid_array
         true_tc_type = 'sigmoid'
 
     # We consider combinations of population fractions for PPC and rate codes
@@ -219,13 +221,13 @@ for k_fit_scheme in range(n_schemes):
 
         # Creation of the true tuning curve objects
         fit_t_mu = fit_t_mu_array[k_fit_N]
-        fit_t_sigma = fit_t_sigma_array[k_fit_N]
+        fit_t_conf = fit_t_conf_array[k_fit_N]
         fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-        fit_tc_sigma = tuning_curve(fit_tc_type, fit_N, fit_t_sigma, tc_lower_bound_sigma,
-                                    tc_upper_bound_sigma)
+        fit_tc_conf = tuning_curve(fit_tc_type, fit_N, fit_t_conf, tc_lower_bound_conf,
+                                    tc_upper_bound_conf)
 
         if fit_scheme.find('ppc') != -1:
-            fit_tc = [fit_tc_mu, fit_tc_sigma]
+            fit_tc = [fit_tc_mu, fit_tc_conf]
         elif fit_scheme.find('dpc') != -1:
             fit_tc = [fit_tc_mu]
         elif fit_scheme.find('rate') != -1:
@@ -240,13 +242,13 @@ for k_fit_scheme in range(n_schemes):
                 true_N = N_array[k_true_N]
                 # Creation of the true tuning curve objects
                 true_t_mu = true_t_mu_array[k_true_N]
-                true_t_sigma = true_t_sigma_array[k_true_N]
+                true_t_conf = true_t_conf_array[k_true_N]
                 true_tc_mu = tuning_curve(true_tc_type, true_N, true_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-                true_tc_sigma = tuning_curve(true_tc_type, true_N, true_t_sigma, tc_lower_bound_sigma,
-                                             tc_upper_bound_sigma)
+                true_tc_conf = tuning_curve(true_tc_type, true_N, true_t_conf, tc_lower_bound_conf,
+                                             tc_upper_bound_conf)
 
                 if true_scheme.find('ppc') != -1:
-                    true_tc = [true_tc_mu, true_tc_sigma]
+                    true_tc = [true_tc_mu, true_tc_conf]
                 elif true_scheme.find('dpc') != -1:
                     true_tc = [true_tc_mu]
                 elif true_scheme.find('rate') != -1:
@@ -272,7 +274,7 @@ for k_fit_scheme in range(n_schemes):
 
                         # Generate the data from the voxel
                         true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction,
-                                           [true_tc_mu, true_tc_sigma])
+                                           [true_tc_mu, true_tc_conf])
                         n_true_features = n_population * true_N
                         weights_tmp = np.reshape(true_voxel.weights, (n_true_features,))
 
@@ -293,7 +295,7 @@ for k_fit_scheme in range(n_schemes):
                             # else:    # We need to compute the response independently from the regressors
                             #     # Get the data of interest
                             #     mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-                            #     sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+                            #     conf = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
                             #     dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
                             #
                             #     # Formatting
@@ -301,7 +303,7 @@ for k_fit_scheme in range(n_schemes):
                             #     for k in range(n_stimuli):
                             #         # Normalization of the distribution
                             #         norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
-                            #         simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
+                            #         simulated_distrib[k] = distrib(mu[k], conf[k], norm_dist)
                             #
                             #     # Creation of experiment object
                             #     exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
@@ -313,12 +315,12 @@ for k_fit_scheme in range(n_schemes):
 
                                 # # Test everything is fine
                                 # mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-                                # sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+                                # conf = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
                                 # dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
                                 #
                                 # fig = plt.figure()
                                 # ax_up = fig.add_subplot(211)
-                                # ax_up.plot(np.linspace(0, n_stimuli, n_stimuli), fit_tc_sigma.f(sigma, 1))
+                                # ax_up.plot(np.linspace(0, n_stimuli, n_stimuli), fit_tc_conf.f(conf, 1))
                                 # ax_down = fig.add_subplot(212)
                                 # ax_down.plot(np.linspace(0, simu_fmri.n_scans, simu_fmri.n_scans), Xz[k_fit_scheme][k_fit_N][k_subject][k_session][:, 7])
                                 # plt.show()

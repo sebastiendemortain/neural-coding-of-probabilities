@@ -39,6 +39,7 @@ class distrib:
     def __init__(self, mu, sigma, dist = []):
         self.mean = mu    # Mean of the distribution
         self.sd = sigma    # Standard deviation of the distribution
+        self.conf = -np.log(sigma)
         self.dist = dist    # Distribution itself (used sometimes for DPC)
         self.a = ((1-self.mean)/self.sd**2-1/self.mean)*self.mean**2    # First parameter of to build the beta distribution
         self.b = ((1-self.mean)/self.sd**2-1/self.mean)*self.mean**2 * (1/self.mean-1)    # Second parameter to build the beta distribution
@@ -66,14 +67,15 @@ class tuning_curve:
         if (self.tc_type=='gaussian'):
             if np.isinf(self.percentiles[0]):    # No percentile is specified : regular spacing between tuning curves
                 # Spacing between each tuning curve
-                delta_mean = (self.upper_bound-self.lower_bound)/(self.N-1)
+                delta_mean = (self.upper_bound-self.lower_bound)/(self.N+1)
                 # Mean of the tuning curve
-                mean = self.lower_bound+i*delta_mean
+                mean = self.lower_bound+(i+1)*delta_mean
             else:    # Find the percentile related to the i-th tuning curve
                 idx = int((len(self.percentiles)-1)*i/(self.N-1))
                 mean = self.percentiles[idx]
             # Variance of the tuning curve
             sigma2_f = self.t**2
+            #tc_value = 1/(np.sqrt(2*np.pi*sigma2_f))*np.exp(-0.5*(x-mean)**2/sigma2_f)
             tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
             return tc_value
         elif (self.tc_type=='sigmoid'):
@@ -81,9 +83,9 @@ class tuning_curve:
             i_eff = i % n    # Effective index (index within the tuning curve family of same monotony)
             if np.isinf(self.percentiles[0]):    # No percentile is specified : regular spacing between tuning curves
                 # Equal spacing between each tuning curve
-                delta_mean = (self.upper_bound-self.lower_bound)/(n-1)
+                delta_mean = (self.upper_bound-self.lower_bound)/(n+1)
                 # Mean of the tuning curve
-                mean = self.lower_bound+i_eff*delta_mean
+                mean = self.lower_bound+(i_eff+1)*delta_mean
             else:    # Find the percentile related to the i_eff-th tuning curve
                 idx = int((len(self.percentiles)-1)*i/(self.N-1))
                 mean = self.percentiles[idx]
@@ -105,8 +107,8 @@ class tuning_curve:
         n_dims = utils.get_dimension_list(distrib_array)
         if n_dims == 2:
             n_mu = len(distrib_array)
-            n_sigma = len(distrib_array[0])
-            proj = np.zeros([n_mu, n_sigma])  # Initialization
+            n_conf = len(distrib_array[0])
+            proj = np.zeros([n_mu, n_conf])  # Initialization
         elif n_dims == 1:
             n_stimuli = len(distrib_array)
             proj = np.zeros(n_stimuli)  # Initialization
@@ -130,32 +132,32 @@ class tuning_curve:
 
         # Double list containing the array of the beta function at the desired resolution
         if n_dims == 2:
-            beta = [[None for j in range(n_sigma)] for i in range(n_mu)]
+            beta = [[None for j in range(n_conf)] for i in range(n_mu)]
             # sum_err = 0
             # err_array = np.array([0])
             for k_mu in range(n_mu):
-                for k_sigma in range(n_sigma):
+                for k_conf in range(n_conf):
                     # Projection of the distribution on tuning curve i
-                    distrib = distrib_array[k_mu][k_sigma]
+                    distrib = distrib_array[k_mu][k_conf]
                     if use_high_integration_resolution:
-                        beta[k_mu][k_sigma] = distrib.beta(x)
+                        beta[k_mu][k_conf] = distrib.beta(x)
                     else:
-                        beta[k_mu][k_sigma] = distrib.beta(x)
-                        # beta[k_mu][k_sigma] = distrib.dist
+                        beta[k_mu][k_conf] = distrib.beta(x)
+                        # beta[k_mu][k_conf] = distrib.dist
 
-                    proj[k_mu, k_sigma] = np.dot(beta[k_mu][k_sigma], f) * delta_x
+                    proj[k_mu, k_conf] = np.dot(beta[k_mu][k_conf], f) * delta_x
                     # proj_num = integrate.quad(lambda y: distrib.beta(y)*self.tuning_curve[0].f(y, i), self.tuning_curve[0].lower_bound+eps, self.tuning_curve[0].upper_bound-eps)[0]
-                    # err = np.abs(proj[k_mu, k_sigma]-proj_num)#/np.sqrt(np.dot(proj[k_mu, k_sigma],proj[k_mu, k_sigma]))
+                    # err = np.abs(proj[k_mu, k_conf]-proj_num)#/np.sqrt(np.dot(proj[k_mu, k_conf],proj[k_mu, k_conf]))
                     # sum_err += err
                     # err_array = np.append(err_array, err)
-                    # if np.abs(proj[k_mu, k_sigma]-proj_num) > 0.01:
+                    # if np.abs(proj[k_mu, k_conf]-proj_num) > 0.01:
                     #     print('ISSUE WITH THE NUMERICAL INTEGRATION. See the dpc case in voxel.activity')
                     #print(err)
 
 
                     # # Plots the difference between theoretical and sampled distributions
                     # fig = plt.figure()
-                    # y1 = beta[k_mu][k_sigma]
+                    # y1 = beta[k_mu][k_conf]
                     # x_ = np.linspace(0,1, 10000, endpoint=True)
                     # y2 = distrib.beta(x_)
                     # ax = plt.subplot(111)
@@ -205,7 +207,7 @@ class tuning_curve:
 
 def get_population_fraction(scheme, population_sparsity_exp = 1):
     if (scheme.find('ppc')!=-1 or scheme.find('rate')!=-1):
-        n_population = 2  # One population for the mean, one for sigma
+        n_population = 2  # One population for the mean, one for conf
         population_fraction = np.zeros(n_population)
         population_fraction[0] = rand.uniform(0, 1) ** population_sparsity_exp
         population_fraction[1] = 1 - population_fraction[0]
@@ -257,14 +259,14 @@ class voxel:
                                             *self.population_fraction[pop]*self.subpopulation_fraction[pop, subpop]
 
     # Neural activity given one distribution
-    def generate_activity(self, distrib_array, mu_sd=np.nan, sigma_sd=np.nan,
+    def generate_activity(self, distrib_array, mu_sd=np.nan, conf_sd=np.nan,
                           use_high_integration_resolution=False):
         # 2 if 2D-grid for plotting the signal, 1 if one single continuous experiment
         n_dims = utils.get_dimension_list(distrib_array)
         if n_dims == 2:
             n_mu = len(distrib_array)
-            n_sigma = len(distrib_array[0])
-            activity = np.zeros([n_mu, n_sigma])  # Initialization
+            n_conf = len(distrib_array[0])
+            activity = np.zeros([n_mu, n_conf])  # Initialization
         elif n_dims == 1:
             n_stimuli = len(distrib_array)
             activity = np.zeros(n_stimuli)  # Initialization
@@ -279,64 +281,64 @@ class voxel:
                 # Case of double array (when 2D-grid of distributions)
                 if n_dims == 2:
                     for k_mu in range(n_mu):
-                        for k_sigma in range(n_sigma):
-                            distrib = distrib_array[k_mu][k_sigma]
+                        for k_conf in range(n_conf):
+                            distrib = distrib_array[k_mu][k_conf]
                             mu = distrib.mean  # Mean of the distribution
-                            sigma = distrib.sd  # Standard deviation of the distribution
-                            activity[k_mu, k_sigma] = self.population_fraction[0]*self.subpopulation_fraction[0, 0]\
-                                                        *mu + (mu_sd/sigma_sd)*self.population_fraction[1]\
-                                                                  *self.subpopulation_fraction[1, 0]*sigma
+                            conf = distrib.conf  # Standard deviation of the distribution
+                            activity[k_mu, k_conf] = self.population_fraction[0]*self.subpopulation_fraction[0, 0]\
+                                                        *mu + (mu_sd/conf_sd)*self.population_fraction[1]\
+                                                                  *self.subpopulation_fraction[1, 0]*conf
                 # Case of single array (when 1D-grid of distributions)
                 elif n_dims == 1:
                     for k in range(n_stimuli):
                         distrib = distrib_array[k]
                         mu = distrib.mean  # Mean of the distribution
-                        sigma = distrib.sd  # Standard deviation of the distribution
+                        conf = distrib.conf  # Standard deviation of the distribution
                         activity[k] = self.population_fraction[0] * self.subpopulation_fraction[0, 0] \
-                                                    * mu + (mu_sd / sigma_sd) * self.population_fraction[1] \
-                                                               * self.subpopulation_fraction[1, 0] * sigma
-                # Correction of the rate weights related to sigma
-                self.weights[1, :] = self.weights[1, :] * (mu_sd / sigma_sd)
+                                                    * mu + (mu_sd / conf_sd) * self.population_fraction[1] \
+                                                               * self.subpopulation_fraction[1, 0] * conf
+                # Correction of the rate weights related to conf
+                self.weights[1, :] = self.weights[1, :] * (mu_sd / conf_sd)
 
         elif self.coding_scheme.find('ppc') != -1:    # Probabilistic population coding case
 
             if n_dims == 2:
-                # Defines the 2D-grid of means and sigma
+                # Defines the 2D-grid of means and conf
                 x_mu = np.zeros(n_mu)
-                x_sigma = np.zeros(n_sigma)
+                x_conf = np.zeros(n_conf)
                 for k_mu in range(n_mu):
                     distrib = distrib_array[k_mu][0]
                     x_mu[k_mu] = distrib.mean
-                for k_sigma in range(n_sigma):
-                    distrib = distrib_array[0][k_sigma]
-                    x_sigma[k_sigma] = distrib.sd
+                for k_conf in range(n_conf):
+                    distrib = distrib_array[0][k_conf]
+                    x_conf[k_conf] = distrib.conf
 
                 for i in range(self.tuning_curve[0].N):
                     f_mu = self.tuning_curve[0].f(x_mu, i)
-                    f_sigma = self.tuning_curve[1].f(x_sigma, i)
+                    f_conf = self.tuning_curve[1].f(x_conf, i)
                     for k_mu in range(n_mu):
-                        for k_sigma in range(n_sigma):
-                            activity[k_mu, k_sigma] += self.weights[0, i]*f_mu[k_mu]\
-                                                         + self.weights[1, i]*f_sigma[k_sigma]
+                        for k_conf in range(n_conf):
+                            activity[k_mu, k_conf] += self.weights[0, i]*f_mu[k_mu]\
+                                                         + self.weights[1, i]*f_conf[k_conf]
 
             elif n_dims == 1:
-                # Defines the 1D-grid of (mean, sigma)
+                # Defines the 1D-grid of (mean, conf)
                 x_mu = np.zeros(n_stimuli)
-                x_sigma = np.zeros(n_stimuli)
+                x_conf = np.zeros(n_stimuli)
                 for k in range(n_stimuli):
                     distrib = distrib_array[k]
                     x_mu[k] = distrib.mean
-                    x_sigma[k] = distrib.sd
+                    x_conf[k] = distrib.conf
 
                 for i in range(self.tuning_curve[0].N):
                     frac_mu = self.subpopulation_fraction[0, i]
-                    frac_sigma = self.subpopulation_fraction[1, i]
+                    frac_conf = self.subpopulation_fraction[1, i]
                     f_mu = self.tuning_curve[0].f(x_mu, i)
-                    f_sigma = self.tuning_curve[1].f(x_sigma, i)
+                    f_conf = self.tuning_curve[1].f(x_conf, i)
 
                     for k in range(n_stimuli):
                         activity[k] += self.weights[0, i]*f_mu[k]\
-                                                         + self.weights[1, i]*f_sigma[k]
+                                                         + self.weights[1, i]*f_conf[k]
         elif self.coding_scheme.find('dpc') != -1:    # Distributional population coding case
 
             for i in range(self.tuning_curve[0].N):
@@ -405,29 +407,29 @@ class fmri:
         if coding_scheme.find('rate')!=-1:
             # Get the features before convolution
             mu = np.zeros(exp.n_stimuli)
-            sigma = np.zeros(exp.n_stimuli)
+            conf = np.zeros(exp.n_stimuli)
             for k in range(exp.n_stimuli):
                 mu[k] = exp.distributions[k].mean
-                sigma[k] = exp.distributions[k].sd
+                conf[k] = exp.distributions[k].conf
 
             q_signal, q_scan_signal, name, stim = self.get_bold_signal(exp, mu, hrf_model)
-            sigma_signal, sigma_scan_signal, name, stim = self.get_bold_signal(exp, sigma, hrf_model)
+            conf_signal, conf_scan_signal, name, stim = self.get_bold_signal(exp, conf, hrf_model)
 
-            X = np.array([q_scan_signal, sigma_scan_signal])
+            X = np.array([q_scan_signal, conf_scan_signal])
             X = np.transpose(X)
 
         elif coding_scheme.find('ppc')!=-1:
             mu = np.zeros(exp.n_stimuli)
-            sigma = np.zeros(exp.n_stimuli)
+            conf = np.zeros(exp.n_stimuli)
             for k in range(exp.n_stimuli):
                 mu[k] = exp.distributions[k].mean
-                sigma[k] = exp.distributions[k].sd
+                conf[k] = exp.distributions[k].conf
             tc_mu = tc[0]
-            tc_sigma = tc[1]
+            tc_conf = tc[1]
             # Initialization of the design matrix
-            X = np.zeros((len(self.scan_times), tc_mu.N+tc_sigma.N))
+            X = np.zeros((len(self.scan_times), tc_mu.N+tc_conf.N))
             q_scan_signal = np.zeros((len(self.scan_times), tc_mu.N))
-            sigma_scan_signal = np.zeros((len(self.scan_times), tc_sigma.N))
+            conf_scan_signal = np.zeros((len(self.scan_times), tc_conf.N))
 
             for i in range(tc_mu.N):
                 q_signal_tmp, q_scan_signal_tmp, name, stim = \
@@ -435,13 +437,13 @@ class fmri:
                 q_scan_signal[:, i] = q_scan_signal_tmp.reshape((len(q_scan_signal_tmp,)))
                 X[:, i] = q_scan_signal[:, i]
 
-            for i in range(tc_sigma.N):
-                sigma_signal_tmp, sigma_scan_signal_tmp, name, stim = \
-                    self.get_bold_signal(exp, tc_sigma.f(sigma, i), hrf_model)
-                sigma_scan_signal[:, i] = sigma_scan_signal_tmp.reshape((len(sigma_scan_signal_tmp,)))
+            for i in range(tc_conf.N):
+                conf_signal_tmp, conf_scan_signal_tmp, name, stim = \
+                    self.get_bold_signal(exp, tc_conf.f(conf, i), hrf_model)
+                conf_scan_signal[:, i] = conf_scan_signal_tmp.reshape((len(conf_scan_signal_tmp,)))
 
                 # Design matrix filling
-                X[:, tc_mu.N+i] = sigma_scan_signal[:, i]
+                X[:, tc_mu.N+i] = conf_scan_signal[:, i]
 
         elif coding_scheme.find('dpc')!=-1:
 
