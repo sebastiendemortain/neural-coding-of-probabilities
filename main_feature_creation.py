@@ -201,7 +201,6 @@ def X_creation(k_subject):
                 # Regressor and BOLD computation
                 X_tmp[k_fit_scheme][k_fit_N][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
                 # Just to have Xz with np array of the right structure
-                a=1
 
     end = time.time()
     print('Design matrix creation : Subject n'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
