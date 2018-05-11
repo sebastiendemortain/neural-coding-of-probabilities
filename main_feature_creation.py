@@ -70,7 +70,7 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # Just for now
-n_subjects = 8
+n_subjects = 1
 n_sessions = 4
 n_N = 3
 n_schemes = 4
@@ -145,6 +145,7 @@ def X_creation(k_subject):
 
                 # Get the data of interest
                 mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
+                sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
                 conf = -np.log(p1g2_sd_array[k_subject][k_session][0, :n_stimuli])
                 dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
 
@@ -153,7 +154,7 @@ def X_creation(k_subject):
                 for k in range(n_stimuli):
                     # Normalization of the distribution
                     norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-                    simulated_distrib[k] = distrib(mu[k], conf[k], norm_dist)
+                    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
 
                 # Experimental design information
                 eps = 1e-5  # For floating points issues
@@ -200,6 +201,7 @@ def X_creation(k_subject):
                 # Regressor and BOLD computation
                 X_tmp[k_fit_scheme][k_fit_N][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
                 # Just to have Xz with np array of the right structure
+                a=1
 
     end = time.time()
     print('Design matrix creation : Subject n'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
@@ -208,7 +210,7 @@ def X_creation(k_subject):
 ### LOOP OVER THE SUBJECTS
 # Parallelization
 if __name__ == '__main__':
-    pool = mp.Pool(mp.cpu_count())  # Create a multiprocessing Pool
+    pool = mp.Pool(1) #mp.cpu_count())  # Create a multiprocessing Pool
     X_tmp = pool.map(X_creation, range(n_subjects))  # proces inputs iterable with pool
 
 ### WE JUST END THE LOOP TO CREATE MATRICES X and end initializing the zscore version

@@ -88,7 +88,7 @@ simulated_distrib = [[None for j in range(n_conf)] for i in range(n_mu)]
 
 for k_mu in range(n_mu):
     for k_conf in range(n_conf):
-        simulated_distrib[k_mu][k_conf] = distrib(mu[k_mu], conf[k_conf])
+        simulated_distrib[k_mu][k_conf] = distrib(mu[k_mu], np.exp(-conf[k_conf]))
 
 # # Plots the distribution
 # fig = plt.figure()

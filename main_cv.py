@@ -303,7 +303,7 @@ for k_fit_scheme in range(n_schemes):
                             #     for k in range(n_stimuli):
                             #         # Normalization of the distribution
                             #         norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
-                            #         simulated_distrib[k] = distrib(mu[k], conf[k], norm_dist)
+                            #         simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
                             #
                             #     # Creation of experiment object
                             #     exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
