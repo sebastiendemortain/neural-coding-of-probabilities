@@ -73,7 +73,7 @@ distrib_type = 'HMM'
 n_subjects = 1
 n_sessions = 4
 n_N = 3
-n_schemes = 4
+n_schemes = 1
 
 fmri_gain = 1    # Amplification of the signal
 
@@ -99,104 +99,105 @@ def X_creation(k_subject):
     # for k_subject in range(n_subjects):
     # k_subject = 0
     start = time.time()
-    ### LOOP OVER THE SCHEME
-    for k_fit_scheme in range(n_schemes):
 
-        #k_fit_scheme=0
+    ### Loop over the sessions : we start with it in order to have the same length whatever N_fit is
+    for k_session in range(n_sessions):
+        # k_session = 0
 
-        # Current schemes
-        fit_scheme = scheme_array[k_fit_scheme]
+        # Get the data of interest
+        mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
+        sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
+        conf = -np.log(p1g2_sd_array[k_subject][k_session][0, :n_stimuli])
+        dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
 
-        ### LOOP OVER THE FIT N's
-        for k_fit_N in range(n_N):
-            # k_fit_N=0
-            # k_true_N=0
+        # Formatting
+        simulated_distrib = [None for k in range(n_stimuli)]
+        for k in range(n_stimuli):
+            # Normalization of the distribution
+            norm_dist = dist[:, k] * (len(dist[1:, k]) - 1) / np.sum(dist[1:, k])
+            simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
 
-            # Current N
-            fit_N = N_array[k_fit_N]
+        # Experimental design information
+        eps = 1e-5  # For floating points issues
 
-            # Creation of the true tuning curve objects
+        between_stimuli_duration = 1.3
+        initial_time = between_stimuli_duration + eps
+        final_time_tmp = between_stimuli_duration * (n_stimuli + 1) + eps
+        # Every 15+-3 trials : one interruption of 8-12s
+        stimulus_onsets = np.linspace(initial_time, final_time_tmp, n_stimuli)
+        # We add some time to simulate breaks
+        stimulus = 0
 
-            # We replace the right value of the "t"'s according to the type of tuning curve and the N
-            if fit_scheme.find('gaussian') != -1:
-                fit_t_mu = t_mu_gaussian_array[k_fit_N]
-                fit_t_conf = t_conf_gaussian_array[k_fit_N]
-                fit_tc_type = 'gaussian'
+        while True:
+            # Number of regularly spaced stimuli
+            n_local_regular_stimuli = rand.randint(12, 18)
+            stimulus_shifted = stimulus + n_local_regular_stimuli  # Current stimulus before the break
+            if stimulus_shifted > n_stimuli:  # The next break is supposed to occur after all stimuli are shown
+                break
+            stimulus_onsets[stimulus_shifted:] += rand.randint(8,
+                                                               12) - between_stimuli_duration  # We consider a break of 8-12s
+            stimulus = stimulus_shifted
 
-            elif fit_scheme.find('sigmoid') != -1:
-                fit_t_mu = t_mu_sigmoid_array[k_fit_N]
-                fit_t_conf = t_conf_sigmoid_array[k_fit_N]
-                fit_tc_type = 'sigmoid'
+        stimulus_durations = 0.01 * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 
-            fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
-            fit_tc_conf = tuning_curve(fit_tc_type, fit_N, fit_t_conf, tc_lower_bound_conf,
-                                         tc_upper_bound_conf)
+        # fMRI information
+        final_time = stimulus_onsets[-1]
+        final_frame_offset = 10  # Frame recording duration after the last stimulus has been shown
+        initial_frame_time = 0
+        final_frame_time = final_time + final_frame_offset
+        dt = 0.01  # Temporal resolution of the fMRI scanner
 
-            if fit_scheme.find('ppc') != -1:
-                fit_tc = [fit_tc_mu, fit_tc_conf]
-            elif fit_scheme.find('dpc') != -1:
-                fit_tc = [fit_tc_mu]
-            elif fit_scheme.find('rate') != -1:
-                fit_tc = []
+        between_scans_duration = 2  # in seconds
+        final_scan_offset = 10  # Scan recording duration after the last stimulus has been shown
+        initial_scan_time = initial_frame_time + between_scans_duration
+        final_scan_time = final_time + final_scan_offset
+        scan_times = np.arange(initial_scan_time, final_scan_time, between_scans_duration)
 
-            ### FIRST LOOP OVER THE SESSIONS : simulating the regressors for this subject
-            for k_session in range(n_sessions):
-                # k_session = 0
+        # Creation of fmri object
+        simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
 
-                # Get the data of interest
-                mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-                sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
-                conf = -np.log(p1g2_sd_array[k_subject][k_session][0, :n_stimuli])
-                dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
+        # Creation of experiment object
+        exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations, simulated_distrib)
 
-                # Formatting
-                simulated_distrib = [None for k in range(n_stimuli)]
-                for k in range(n_stimuli):
-                    # Normalization of the distribution
-                    norm_dist = dist[:, k]*(len(dist[1:, k])-1)/np.sum(dist[1:, k])
-                    simulated_distrib[k] = distrib(mu[k], sigma[k], norm_dist)
+        ### LOOP OVER THE SCHEME
+        for k_fit_scheme in range(n_schemes):
 
-                # Experimental design information
-                eps = 1e-5  # For floating points issues
+            #k_fit_scheme=0
 
-                between_stimuli_duration = 1.3
-                initial_time = between_stimuli_duration + eps
-                final_time_tmp = between_stimuli_duration * (n_stimuli + 1) + eps
-                # Every 15+-3 trials : one interruption of 8-12s
-                stimulus_onsets = np.linspace(initial_time, final_time_tmp, n_stimuli)
-                # We add some time to simulate breaks
-                stimulus = 0
+            # Current schemes
+            fit_scheme = scheme_array[k_fit_scheme]
 
-                while True:
-                    # Number of regularly spaced stimuli
-                    n_local_regular_stimuli = rand.randint(12, 18)
-                    stimulus_shifted = stimulus + n_local_regular_stimuli  # Current stimulus before the break
-                    if stimulus_shifted > n_stimuli:  # The next break is supposed to occur after all stimuli are shown
-                        break
-                    stimulus_onsets[stimulus_shifted:] += rand.randint(8,
-                                                                       12) - between_stimuli_duration  # We consider a break of 8-12s
-                    stimulus = stimulus_shifted
+            ### LOOP OVER THE FIT N's
+            for k_fit_N in range(n_N):
+                # k_fit_N=0
+                # k_true_N=0
 
-                stimulus_durations = 0.01 * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
+                # Current N
+                fit_N = N_array[k_fit_N]
 
-                # fMRI information
-                final_time = stimulus_onsets[-1]
-                final_frame_offset = 10  # Frame recording duration after the last stimulus has been shown
-                initial_frame_time = 0
-                final_frame_time = final_time + final_frame_offset
-                dt = 0.01  # Temporal resolution of the fMRI scanner
+                # Creation of the true tuning curve objects
 
-                between_scans_duration = 2  # in seconds
-                final_scan_offset = 10  # Scan recording duration after the last stimulus has been shown
-                initial_scan_time = initial_frame_time + between_scans_duration
-                final_scan_time = final_time + final_scan_offset
-                scan_times = np.arange(initial_scan_time, final_scan_time, between_scans_duration)
+                # We replace the right value of the "t"'s according to the type of tuning curve and the N
+                if fit_scheme.find('gaussian') != -1:
+                    fit_t_mu = t_mu_gaussian_array[k_fit_N]
+                    fit_t_conf = t_conf_gaussian_array[k_fit_N]
+                    fit_tc_type = 'gaussian'
 
-                # Creation of fmri object
-                simu_fmri = fmri(initial_frame_time, final_frame_time, dt, scan_times)
+                elif fit_scheme.find('sigmoid') != -1:
+                    fit_t_mu = t_mu_sigmoid_array[k_fit_N]
+                    fit_t_conf = t_conf_sigmoid_array[k_fit_N]
+                    fit_tc_type = 'sigmoid'
 
-                # Creation of experiment object
-                exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations, simulated_distrib)
+                fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
+                fit_tc_conf = tuning_curve(fit_tc_type, fit_N, fit_t_conf, tc_lower_bound_conf,
+                                             tc_upper_bound_conf)
+
+                if fit_scheme.find('ppc') != -1:
+                    fit_tc = [fit_tc_mu, fit_tc_conf]
+                elif fit_scheme.find('dpc') != -1:
+                    fit_tc = [fit_tc_mu]
+                elif fit_scheme.find('rate') != -1:
+                    fit_tc = []
 
                 # Regressor and BOLD computation
                 X_tmp[k_fit_scheme][k_fit_N][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
