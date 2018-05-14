@@ -1,9 +1,13 @@
+#import h5py
+
+import hdf5storage
+
 import random as rand
 import numpy as np
 # import matplotlib.pyplot as plt
 from scipy import stats
 from scipy import integrate
-from nistats import hemodynamic_models
+#from nistats import hemodynamic_models
 
 import utils
 from scipy import io as sio
@@ -18,9 +22,15 @@ def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
     p1g2_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     p1g2_mu_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     p1g2_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-
-    data_mat = sio.loadmat('data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions, n_stimuli, distrib_type), struct_as_record=False)
-    out = data_mat['out_io']
+    filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_hmm.mat'.format(n_subjects, n_sessions,
+                                                                                         n_stimuli, distrib_type)
+    if n_subjects == 100:
+        a = 1
+        #with h5py.File(filepath, 'r') as file:
+        #     out = list(file['out_io'])
+    else:
+        data_mat = sio.loadmat(filepath, struct_as_record=False)
+        out = data_mat['out_io']
 
     for subject in range(n_subjects):
         for session in range(n_sessions):
