@@ -44,19 +44,21 @@ t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
 t_mu_sigmoid_array = np.sqrt(2*np.pi)/4*t_mu_gaussian_array
 t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
 
-optimal_k_fit_N_array = np.array([2, 1, 2, 1])
-optimal_fit_N_array = np.zeros_like(optimal_k_fit_N_array)
-optimal_t_mu_gaussian_array = np.zeros_like(optimal_k_fit_N_array)
-optimal_t_mu_sigmoid_array = np.zeros_like(optimal_k_fit_N_array)
-optimal_t_conf_gaussian_array = np.zeros_like(optimal_k_fit_N_array)
-optimal_t_conf_sigmoid_array = np.zeros_like(optimal_k_fit_N_array)
+optimal_k_fit_N_array = np.array([2, 1, 2, 1]).astype(int)
+optimal_fit_N_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_mu_gaussian_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_mu_sigmoid_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_conf_gaussian_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_conf_sigmoid_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
 
 for k_fit_scheme in range(n_schemes - 1):    # We exclude rate coding
-    optimal_fit_N_array[k_fit_scheme] = N_array(optimal_k_fit_N_array[k_fit_scheme])    # Optimal N
+    optimal_fit_N_array[k_fit_scheme] = N_array[optimal_k_fit_N_array[k_fit_scheme]]    # Optimal N
     # Now we fill values for optimal mu and t
     if k_fit_scheme % 2 == 0:    # Gaussian case
-        optimal_t_mu_gaussian_array[k_fit_scheme] = t_mu_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
-        optimal_t_conf_gaussian_array[k_fit_scheme] = t_conf_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
+        t_mu_tmp = t_mu_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
+        t_conf_tmp = t_conf_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
+        optimal_t_mu_gaussian_array[k_fit_scheme] = t_mu_tmp
+        optimal_t_conf_gaussian_array[k_fit_scheme] = t_conf_tmp
     else:
         optimal_t_mu_sigmoid_array[k_fit_scheme] = t_mu_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
         optimal_t_conf_sigmoid_array[k_fit_scheme] = t_conf_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
@@ -85,10 +87,10 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
-n_subjects = 1
-n_sessions = 4
-n_N = 3
-n_schemes = 1
+# n_subjects = 1
+# n_sessions = 4
+# n_N = 3
+# n_schemes = 1
 
 fmri_gain = 1    # Amplification of the signal
 
@@ -171,11 +173,11 @@ def X_creation(k_subject):
 
             # Current schemes
             fit_scheme = scheme_array[k_fit_scheme]
-            fit_N = optimal_fit_N_array[k_fit_scheme]
 
             # We replace the right value of the "t"'s according to the type of tuning curve and the N
             if fit_scheme.find('gaussian') != -1:
                 # Current N
+                fit_N = optimal_fit_N_array[k_fit_scheme]
                 fit_t_mu = optimal_t_mu_gaussian_array[k_fit_scheme]
                 fit_t_conf = optimal_t_conf_gaussian_array[k_fit_scheme]
                 fit_tc_type = 'gaussian'
@@ -185,6 +187,7 @@ def X_creation(k_subject):
                                              tc_upper_bound_conf)
 
             elif fit_scheme.find('sigmoid') != -1:
+                fit_N = optimal_fit_N_array[k_fit_scheme]
                 fit_t_mu = optimal_t_mu_sigmoid_array[k_fit_scheme]
                 fit_t_conf = optimal_t_conf_sigmoid_array[k_fit_scheme]
                 fit_tc_type = 'sigmoid'
@@ -201,7 +204,7 @@ def X_creation(k_subject):
                 fit_tc = []
 
             # Regressor and BOLD computation
-            X_tmp[k_fit_scheme][k_fit_N][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
+            X_tmp[k_fit_scheme][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
             # Just to have Xz with np array of the right structure
 
     end = time.time()
@@ -212,11 +215,11 @@ def X_creation(k_subject):
 # Parallelization
 if __name__ == '__main__':
     pool = mp.Pool(mp.cpu_count())  # Create a multiprocessing Pool
-    X_tmp = pool.map(X_creation, range(n_subjects))  # proces inputs iterable with pool
+    X_tmp = pool.map(X_creation, range(n_subjects))  # process inputs iterable with pool
 
 ### WE JUST END THE LOOP TO CREATE MATRICES X and end initializing the zscore version
-for k_fit_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
-    X[k_fit_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp[k_subject][k_fit_scheme][k_fit_N][k_session])
+for k_fit_scheme, k_subject, k_session in itertools.product(range(n_schemes), range(n_subjects), range(n_sessions)):
+    X[k_fit_scheme][k_subject][k_session] = copy.deepcopy(X_tmp[k_subject][k_fit_scheme][k_session])
 
 # Save this matrix
 with open("output/design_matrices/X_2.txt", "wb") as fp:   #Pickling
