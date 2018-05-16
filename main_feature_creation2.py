@@ -95,8 +95,7 @@ distrib_type = 'HMM'
 fmri_gain = 1    # Amplification of the signal
 
 # Initialization of the design matrices and their zscore versions
-X = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_true_scheme in range(n_schemes)]
-     for k_fit_scheme in range(n_schemes)]
+X = [[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_scheme in range(n_schemes)]
 
 ### WE BEGIN BY CREATING THE DESIGN MATRIX X
 
