@@ -1,13 +1,12 @@
 #import h5py
-
-import hdf5storage
+#import hdf5storage
 
 import random as rand
 import numpy as np
 # import matplotlib.pyplot as plt
 from scipy import stats
 from scipy import integrate
-#from nistats import hemodynamic_models
+from nistats import hemodynamic_models
 
 import utils
 from scipy import io as sio
@@ -24,20 +23,26 @@ def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
     p1g2_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_hmm.mat'.format(n_subjects, n_sessions,
                                                                                          n_stimuli, distrib_type)
-    if n_subjects == 100:
-        a = 1
-        #with h5py.File(filepath, 'r') as file:
-        #     out = list(file['out_io'])
+    if n_subjects == 100:    # v7.3 mat file
+        data_mat = hdf5storage.loadmat(filepath)
+        data_mat = data_mat['out_io']
+        for subject in range(n_subjects):
+            for session in range(n_sessions):
+                out_tmp = data_mat[subject][session]
+                p1g2_dist_array[subject][session] = out_tmp[0][2]
+                p1g2_mu_array[subject][session] = out_tmp[0][4][0]
+                p1g2_sd_array[subject][session] = out_tmp[0][5][0]
+
     else:
         data_mat = sio.loadmat(filepath, struct_as_record=False)
         out = data_mat['out_io']
 
-    for subject in range(n_subjects):
-        for session in range(n_sessions):
-                out_tmp = out[subject][session]
-                p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
-                p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
-                p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
+        for subject in range(n_subjects):
+            for session in range(n_sessions):
+                    out_tmp = out[subject][session]
+                    p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
+                    p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
+                    p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
 
     return [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array]
 
@@ -66,7 +71,7 @@ class tuning_curve:
     # Initialization of the tuning curve attributes
     def __init__(self, tc_type, N, t, lower_bound, upper_bound, percentiles=np.full(100, np.inf)):
         self.tc_type = tc_type
-        self.N = N
+        self.N = int(N)
         self.t = t
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
