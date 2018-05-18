@@ -403,7 +403,7 @@ class fmri:
 
         signal, name = hemodynamic_models.compute_regressor(
                 exp_condition, hrf_model, self.frame_times, con_id='main',
-                oversampling=16)
+                oversampling=1)
 
         # Amplify the signal
         signal = fmri_gain * signal

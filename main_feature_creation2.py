@@ -46,10 +46,9 @@ t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
 
 optimal_k_fit_N_array = np.array([2, 1, 2, 1]).astype(int)
 optimal_fit_N_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
-optimal_t_mu_gaussian_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
-optimal_t_mu_sigmoid_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
-optimal_t_conf_gaussian_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
-optimal_t_conf_sigmoid_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_mu_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_conf_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
+optimal_t_conf_array = np.zeros_like(optimal_k_fit_N_array).astype(float)
 
 for k_fit_scheme in range(n_schemes - 1):    # We exclude rate coding
     optimal_fit_N_array[k_fit_scheme] = N_array[optimal_k_fit_N_array[k_fit_scheme]]    # Optimal N
@@ -57,11 +56,11 @@ for k_fit_scheme in range(n_schemes - 1):    # We exclude rate coding
     if k_fit_scheme % 2 == 0:    # Gaussian case
         t_mu_tmp = t_mu_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
         t_conf_tmp = t_conf_gaussian_array[optimal_k_fit_N_array[k_fit_scheme]]
-        optimal_t_mu_gaussian_array[k_fit_scheme] = t_mu_tmp
-        optimal_t_conf_gaussian_array[k_fit_scheme] = t_conf_tmp
+        optimal_t_mu_array[k_fit_scheme] = t_mu_tmp
+        optimal_t_conf_array[k_fit_scheme] = t_conf_tmp
     else:
-        optimal_t_mu_sigmoid_array[k_fit_scheme] = t_mu_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
-        optimal_t_conf_sigmoid_array[k_fit_scheme] = t_conf_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
+        optimal_t_mu_array[k_fit_scheme] = t_mu_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
+        optimal_t_conf_array[k_fit_scheme] = t_conf_sigmoid_array[optimal_k_fit_N_array[k_fit_scheme]]
 
 
 # Lower and upper bounds of the encoded summary quantity (for tuning curves)
@@ -175,10 +174,10 @@ def X_creation(k_subject):
 
             # We replace the right value of the "t"'s according to the type of tuning curve and the N
             if fit_scheme.find('gaussian') != -1:
-                # Current N
                 fit_N = optimal_fit_N_array[k_fit_scheme]
-                fit_t_mu = optimal_t_mu_gaussian_array[k_fit_scheme]
-                fit_t_conf = optimal_t_conf_gaussian_array[k_fit_scheme]
+                fit_t_mu = optimal_t_mu_array[k_fit_scheme]
+                fit_t_conf = optimal_t_conf_array[k_fit_scheme]
+
                 fit_tc_type = 'gaussian'
                 # Creation of the true tuning curve objects
                 fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
@@ -187,8 +186,9 @@ def X_creation(k_subject):
 
             elif fit_scheme.find('sigmoid') != -1:
                 fit_N = optimal_fit_N_array[k_fit_scheme]
-                fit_t_mu = optimal_t_mu_sigmoid_array[k_fit_scheme]
-                fit_t_conf = optimal_t_conf_sigmoid_array[k_fit_scheme]
+                fit_t_mu = optimal_t_mu_array[k_fit_scheme]
+                fit_t_conf = optimal_t_conf_array[k_fit_scheme]
+
                 fit_tc_type = 'sigmoid'
                 # Creation of the true tuning curve objects
                 fit_tc_mu = tuning_curve(fit_tc_type, fit_N, fit_t_mu, tc_lower_bound_mu, tc_upper_bound_mu)
