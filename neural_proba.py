@@ -387,6 +387,10 @@ class fmri:
         self.frame_times = np.arange(self.initial_frame_time, self.final_frame_time, self.dt)    # for now
         self.scan_times = scan_times
         self.n_scans = len(scan_times)
+        idx_scans_within_frames = np.zeros(self.n_scans)
+        for k in range(self.n_scans):
+            idx_scans_within_frames[k] = utils.find_nearest(self.frame_times, self.scan_times[k])
+        self.idx_scans_within_frames = idx_scans_within_frames.astype(int)
 
     def get_bold_signal(self, exp, amplitudes, hrf_model, fmri_gain = 1):
         '''To get the response vector'''
@@ -410,9 +414,8 @@ class fmri:
 
         # Take the signal only at the scan values
         scan_signal = np.zeros_like(self.scan_times)
-        for k, scan_time in enumerate(self.scan_times):
-            idx = utils.find_nearest(self.frame_times, scan_time)[0]
-            scan_signal[k] = signal[idx]
+        for k, idx in enumerate(self.idx_scans_within_frames):
+            scan_signal[k] = signal[idx, 0]
 
         return signal, scan_signal, name, stim
 

@@ -12,7 +12,7 @@ def get_dimension_list(matrix):
 
 def find_nearest(array, value):
     idx = (np.abs(array-value)).argmin()
-    return idx, array[idx]
+    return idx
 
 def plot_detail(fig, ax, x_label, y_label, tick_fontsize, xfontstyle='normal', aspect=1):
     '''For plots with arrows at the border'''
