@@ -226,6 +226,7 @@ if code_run.find('parallel') != -1:
 
 elif code_run.find('serial') != -1:
     ### WE BEGIN BY CREATING THE DESIGN MATRIX X
+    start = time.time()
 
     for k_subject in range(n_subjects):
         ### Loop over the sessions : we start with it in order to have the same length whatever N_fit is
@@ -266,7 +267,7 @@ elif code_run.find('serial') != -1:
                                                                    12) - between_stimuli_duration  # We consider a break of 8-12s
                 stimulus = stimulus_shifted
 
-            dt = 0.1  # Temporal resolution of the fMRI scanner
+            dt = 0.125  # Temporal resolution of the fMRI scanner
 
             stimulus_durations = dt * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 
@@ -333,7 +334,8 @@ elif code_run.find('serial') != -1:
                     X[k_fit_scheme][k_fit_N][k_subject][k_session] = simu_fmri.get_regressor(exp, fit_scheme, fit_tc)
                     # Just to have Xz with np array of the right structure
 
-        print('Design matrix creation : Subject n' + str(k_subject) + ' is done !')
+        end = time.time()
+        print('Design matrix creation : Subject n'+str(k_subject)+' is done ! Time elapsed : '+str(end-start)+'s')
 
 
 # Save this matrix
