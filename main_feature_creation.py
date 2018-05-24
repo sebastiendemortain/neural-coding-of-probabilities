@@ -72,10 +72,10 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
-n_subjects = 20
+n_subjects = 3
 n_sessions = 4
-n_N = 7
-n_schemes = 4
+n_N = len(N_array)
+n_schemes = 1
 
 fmri_gain = 1    # Amplification of the signal
 
