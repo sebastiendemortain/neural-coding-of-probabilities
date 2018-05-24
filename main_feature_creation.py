@@ -57,7 +57,7 @@ tc_upper_bound_conf = 2.6
 n_N = len(N_array)
 
 # The number of subjects
-n_subjects = 20
+n_subjects = 100
 
 # The number of sessions
 n_sessions = 4
@@ -69,7 +69,7 @@ n_stimuli = 380
 distrib_type = 'HMM'
 
 # Load the corresponding data
-[p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
+[p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
 n_subjects = 3
@@ -96,8 +96,8 @@ if code_run.find('parallel') != -1:
     #                t_mu_sigmoid_array=t_mu_sigmoid_array, t_conf_sigmoid_array=t_conf_sigmoid_array,
     #                tc_lower_bound_mu=tc_lower_bound_mu, tc_upper_bound_mu=tc_upper_bound_mu,
     #                tc_lower_bound_conf=tc_lower_bound_conf, tc_upper_bound_conf=tc_upper_bound_conf,
-    #                n_sessions=n_sessions, p1g2_mu_array=p1g2_mu_array, p1g2_sd_array=p1g2_sd_array,
-    #                p1g2_dist_array=p1g2_dist_array, initial_time=initial_time, final_time=final_time,
+    #                n_sessions=n_sessions, p1_mu_array=p1_mu_array, p1_sd_array=p1_sd_array,
+    #                p1_dist_array=p1_dist_array, initial_time=initial_time, final_time=final_time,
     #                stimulus_onsets=stimulus_onsets, stimulus_durations=stimulus_durations, X=X, Xz=Xz):
 
         '''Creation of X per subject'''
@@ -112,10 +112,10 @@ if code_run.find('parallel') != -1:
             # k_session = 0
 
             # Get the data of interest
-            mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-            sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
-            conf = -np.log(p1g2_sd_array[k_subject][k_session][0, :n_stimuli])
-            dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
+            mu = p1_mu_array[k_subject][k_session][0, :n_stimuli]
+            sigma = p1_sd_array[k_subject][k_session][0, :n_stimuli]
+            conf = -np.log(p1_sd_array[k_subject][k_session][0, :n_stimuli])
+            dist = p1_dist_array[k_subject][k_session][:, :n_stimuli]
 
             # Formatting
             simulated_distrib = [None for k in range(n_stimuli)]
@@ -236,10 +236,10 @@ elif code_run.find('serial') != -1:
             # k_session = 0
 
             # Get the data of interest
-            mu = p1g2_mu_array[k_subject][k_session][0, :n_stimuli]
-            sigma = p1g2_sd_array[k_subject][k_session][0, :n_stimuli]
-            conf = -np.log(p1g2_sd_array[k_subject][k_session][0, :n_stimuli])
-            dist = p1g2_dist_array[k_subject][k_session][:, :n_stimuli]
+            mu = p1_mu_array[k_subject][k_session][0, :n_stimuli]
+            sigma = p1_sd_array[k_subject][k_session][0, :n_stimuli]
+            conf = -np.log(p1_sd_array[k_subject][k_session][0, :n_stimuli])
+            dist = p1_dist_array[k_subject][k_session][:, :n_stimuli]
 
             # Formatting
             simulated_distrib = [None for k in range(n_stimuli)]

@@ -18,33 +18,44 @@ from scipy import io as sio
 def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
 
     # Initialization of the outputs
-    p1g2_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    p1g2_mu_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    p1g2_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    p1_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    p1_mu_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    p1_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_hmm.mat'.format(n_subjects, n_sessions,
                                                                                          n_stimuli, distrib_type)
-    if n_subjects == 100:    # v7.3 mat file
-        data_mat = hdf5storage.loadmat(filepath)
-        data_mat = data_mat['out_io']
-        for subject in range(n_subjects):
-            for session in range(n_sessions):
-                out_tmp = data_mat[subject][session]
-                p1g2_dist_array[subject][session] = out_tmp[0][2]
-                p1g2_mu_array[subject][session] = out_tmp[0][4][0]
-                p1g2_sd_array[subject][session] = out_tmp[0][5][0]
+    # if n_subjects == 100:    # v7.3 mat file
+    #     data_mat = hdf5storage.loadmat(filepath)
+    #     data_mat = data_mat['out_io']
+    #     for subject in range(n_subjects):
+    #         for session in range(n_sessions):
+    #             out_tmp = data_mat[subject][session]
+    #             p1g2_dist_array[subject][session] = out_tmp[0][2]
+    #             p1g2_mu_array[subject][session] = out_tmp[0][4][0]
+    #             p1g2_sd_array[subject][session] = out_tmp[0][5][0]
+    #
+    # else:
+    # data_mat = sio.loadmat(filepath, struct_as_record=False)
+    # out = data_mat['out_io']
+    #
+    # for subject in range(n_subjects):
+    #     for session in range(n_sessions):
+    #             out_tmp = out[subject][session]
+    #             p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
+    #             p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
+    #             p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
 
-    else:
-        data_mat = sio.loadmat(filepath, struct_as_record=False)
-        out = data_mat['out_io']
+    data_mat = sio.loadmat(filepath, struct_as_record=False)
+    out_io = data_mat['out_io']
 
-        for subject in range(n_subjects):
-            for session in range(n_sessions):
-                    out_tmp = out[subject][session]
-                    p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
-                    p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
-                    p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
+    for subject in range(n_subjects):
+        for session in range(n_sessions):
+                out_tmp = out_io[subject][session]
+                p1_dist_array[subject][session] = out_tmp[0, 0].p1_dist
+                p1_mu_array[subject][session] = out_tmp[0, 0].p1_mean
+                p1_sd_array[subject][session] = out_tmp[0, 0].p1_sd
 
-    return [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array]
+
+    return [p1_dist_array, p1_mu_array, p1_sd_array]
 
 
 class distrib:
