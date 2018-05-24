@@ -72,14 +72,14 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
-n_subjects = 100
+n_subjects = 20
 n_sessions = 4
 n_N = 7
 n_schemes = 4
 
 fmri_gain = 1    # Amplification of the signal
 
-code_run = 'parallel'    # 'parallel' if the code should be run in parallel
+code_run = 'serial'    # 'parallel' if the code should be run in parallel
 
 # Initialization of the design matrices and their zscore versions
 X = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
@@ -146,7 +146,7 @@ if code_run.find('parallel') != -1:
                 stimulus = stimulus_shifted
 
 
-            dt = 0.1  # Temporal resolution of the fMRI scanner
+            dt = 0.125  # Temporal resolution of the fMRI scanner
 
             stimulus_durations = dt * np.ones_like(stimulus_onsets)  # Dirac-like stimuli
 

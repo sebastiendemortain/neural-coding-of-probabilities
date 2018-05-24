@@ -9,13 +9,12 @@ import numpy as np
 #import decimal
 # import matplotlib
 # matplotlib.use('Agg')    # To avoid bugs
-#import matplotlib.pyplot as plt
-#import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib
 width = 18
 height = 16
 #matplotlib.rcParams['figure.figsize'] = [width, height]
 import pandas as pd
-
 
 import pickle
 import itertools
@@ -68,7 +67,7 @@ tc_upper_bound_conf = 2.6
 n_N = len(N_array)
 
 # The number of fractions tested (related to W)
-n_fractions = 1335
+n_fractions = 1335#
 
 # Sparsity exponents
 sparsity_exp_array = np.array([1, 2, 4, 8])
@@ -95,6 +94,7 @@ snr = 0.1
 # Type of regression
 regr = linear_model.LinearRegression(n_jobs=-1)
 
+# Load the design matrices and specify their size
 with open("output/design_matrices/X_20sub_f.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
     X = pickle.load(fp)
 
@@ -105,7 +105,6 @@ white_mat = sio.loadmat('data/simu/whitening_matrix.mat')
 W = white_mat['W']
 # Complete the in-between session "holes"
 W[300:600, 300:600] = W[20:320, 20:320]
-
 whitening_done = False
 
 if not whitening_done:
@@ -117,6 +116,8 @@ if not whitening_done:
         X[k_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp)
 
 whitening_done = True
+
+X_after_whitening = copy.deepcopy(X)
 
 # Creation of y from X to save computational resources
 # Initialization of the response vectors
@@ -212,18 +213,29 @@ for k_scheme in range(n_schemes):
 
                 fraction_counter += 1
 
-# Noise injection
+y_without_noise = copy.deepcopy(y)
+# with open("output/design_matrices/y_20sub.txt", "wb") as fp:   #Pickling
+#     pickle.dump(y, fp)
 
 # Compute the amplitude of the noise
+noise_sd = np.zeros((n_schemes, n_N))
+added_noise = np.zeros((n_schemes, n_N, 1000))
 for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
-    all_y = np.asarray(y[k_scheme][k_true_N]).flatten()    # Concatenation of all y grouped together for SNR computation
-    #print(all_y[0])
-    noise_sd = np.sqrt(np.var(all_y[0])*(1/snr-1))    # std of the added gaussian noise
+    all_y = np.asarray(y[k_scheme][k_true_N]).flatten()  # Concatenation of all y grouped together for SNR computation
+    # print(all_y[0])
+    noise_sd[k_scheme, k_true_N] = np.sqrt(np.var(all_y[0]) * (1 / snr - 1))  # std of the added gaussian noise
+    added_noise[k_scheme, k_true_N, :] = np.random.normal(0, noise_sd[k_scheme, k_true_N], 1000)
     del all_y    # Free memory
-    for k_fraction, k_subject, k_session in itertools.product(range(n_fractions), range(n_subjects), range(n_sessions)):
-        y_tmp = copy.deepcopy(y[k_scheme][k_true_N][k_fraction][k_subject][k_session])
-        y_tmp = y_tmp + np.random.normal(0, noise_sd, len(y_tmp))
-        y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_tmp)
+
+# Compute the amplitude of the noise
+for k_scheme, k_true_N, k_fraction, k_subject, k_session in itertools.product(range(n_schemes), range(n_N),
+                                                                              range(n_fractions), range(n_subjects),
+                                                                              range(n_sessions)):
+    y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = y[k_scheme][k_true_N][k_fraction][k_subject][
+                                                                  k_session] + added_noise[k_scheme, k_true_N, :len(
+        y[k_scheme][k_true_N][k_fraction][k_subject][k_session])]
+
+# y_with_noise = copy.deepcopy(y)
 
 # Create the filtering design matrices and filters out the response
 
@@ -239,6 +251,21 @@ for k_scheme, k_true_N, k_fraction, k_subject, k_sessions in itertools.product(r
     y_tmp = copy.deepcopy(y_tmp - np.matmul(np.matmul(X_filter, np.transpose(X_filter)), y_tmp))    # Regression
     y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_tmp)
 
+y_after_filtering = copy.deepcopy(y)
+
+# # To visualize the matrix
+# k_scheme = 0
+# k_true_N = 2
+# k_fraction = 18
+# k_subject = 0
+# k_session = 3
+
+# fig = plt.figure(figsize=(10, 10))
+# ax = fig.add_subplot(111)
+# plt.imshow(X_filter, cmap=plt.cm.ocean, extent=[2, K, N-1,0], aspect='auto')
+# plt.colorbar()
+# plt.show()
+
 # Z-scoring of X and y
 # Initialization
 Xz = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
@@ -250,6 +277,9 @@ X_sd_array = [[[None for k_subject in range(n_subjects)] for k_fit_N in range(n_
 yz = [[[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fraction in
         range(n_fractions)]
        for k_true_N in range(n_N)] for k_scheme in range(n_schemes)]
+yz_without_noise = [[[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fraction in
+                      range(n_fractions)]
+                     for k_true_N in range(n_N)] for k_scheme in range(n_schemes)]
 
 y_sd_array = [[[[None for k_subject in range(n_subjects)] for k_fraction in range(n_fractions)]
                for k_true_N in range(n_N)] for k_scheme in range(n_schemes)]
@@ -285,6 +315,9 @@ for k_scheme, k_true_N, k_fraction, k_subject in itertools.product(range(n_schem
         yz[k_scheme][k_true_N][k_fraction][k_subject][k_session] = \
             (copy.deepcopy(y[k_scheme][k_true_N][k_fraction][k_subject][
                                k_session]) - y_mean) / y_sd  # Centering and standardization
+        yz_without_noise[k_scheme][k_true_N][k_fraction][k_subject][k_session] = \
+            (copy.deepcopy(y_without_noise[k_scheme][k_true_N][k_fraction][k_subject][
+                               k_session]) - y_mean) / y_sd  # Centering and standardization
 
     ### End of z-scoring of y
 
@@ -295,57 +328,3 @@ for k_scheme, k_true_N, k_fraction, k_subject in itertools.product(range(n_schem
         weights[k_scheme][k_true_N][k_fraction][k_subject][feature] = \
         weights[k_scheme][k_true_N][k_fraction][k_subject][feature] * X_sd_array[k_scheme][k_true_N][k_subject][
             feature] / y_sd_array[k_scheme][k_true_N][k_fraction][k_subject]
-
-# The loops
-# The quantity to be computed during the cross validation
-r2_test = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
-r2_train = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
-rho_test = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
-rho_train = np.zeros((n_schemes, n_N, n_N, n_fractions, n_subjects, n_sessions))
-
-### BEGINNING OF LOOPS OVER HYPERPARAMETERS
-for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(range(n_schemes),
-                                                                            range(n_N), range(n_N), range(n_fractions), range(n_subjects)):
-    # Current cross-validation matrix and response
-    X_cv = copy.deepcopy(Xz[k_scheme][k_fit_N][k_subject])
-    y_cv = copy.deepcopy(yz[k_scheme][k_true_N][k_fraction][k_subject])
-    # LOOP OVER SESSIONS (CV)
-    for k_session in range(n_sessions):
-        X_train = copy.deepcopy(np.concatenate(X_cv[:k_session]+X_cv[k_session+1:], axis=0))
-        y_train = copy.deepcopy(np.concatenate(y_cv[:k_session]+y_cv[k_session+1:], axis=0))
-        X_test = copy.deepcopy(X_cv[k_session])
-        y_test = copy.deepcopy(y_cv[k_session])
-
-        # Train the model using the training set
-        regr.fit(X_train, y_train)
-        # Make predictions using the testing set
-        y_pred = regr.predict(X_test)
-        # Updates the big tensor
-        y_hat_train = regr.predict(X_train)
-        r2_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_train, y_hat_train)
-        r2_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_test, y_pred)
-        rho_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_train, y_hat_train)[0]
-        rho_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_pred, y_test)[0]
-        # with open("output/results/Output.txt", "w") as text_file:
-        #     text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
-        #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-        #         r2_score(y_test, y_pred)))
-        # print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \nr2_train={}'.format(
-        #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-        #         r2_score(y_test, y_pred), r2_train))
-
-# Histogram of r2_train for each fit_N and true_N
-
-r2_train_summary = np.zeros((n_schemes, n_N, n_N, n_fractions*n_subjects*n_sessions))
-r2_test_summary = np.zeros((n_schemes, n_N, n_N, n_fractions*n_subjects*n_sessions))
-rho_train_summary = np.zeros((n_schemes, n_N, n_N, n_fractions*n_subjects*n_sessions))
-rho_test_summary = np.zeros((n_schemes, n_N, n_N, n_fractions*n_subjects*n_sessions))
-
-np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
-np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
-np.save('output/results/rho_test_snr'+str(snr)+'.npy', rho_test)
-np.save('output/results/rho_train_snr'+str(snr)+'.npy', rho_train)
