@@ -26,6 +26,8 @@ from neural_proba import voxel
 from neural_proba import experiment
 from neural_proba import fmri
 
+import utils
+
 # Define the seed to reproduce results from random processes
 rand.seed(5);
 
@@ -70,14 +72,14 @@ distrib_type = 'HMM'
 [p1g2_dist_array, p1g2_mu_array, p1g2_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
-n_subjects = 1
+n_subjects = 100
 n_sessions = 4
 n_N = 7
 n_schemes = 4
 
 fmri_gain = 1    # Amplification of the signal
 
-code_run = 'serial'    # 'parallel' if the code should be run in parallel
+code_run = 'parallel'    # 'parallel' if the code should be run in parallel
 
 # Initialization of the design matrices and their zscore versions
 X = [[[[None for k_session in range(n_sessions)] for k_subject in range(n_subjects)] for k_fit_N in range(n_N)]
@@ -217,7 +219,7 @@ if code_run.find('parallel') != -1:
     ### LOOP OVER THE SUBJECTS
     # Parallelization
     if __name__ == '__main__':
-        pool = mp.Pool(n_subjects)#mp.cpu_count())  # Create a multiprocessing Pool
+        pool = mp.Pool(mp.cpu_count())  # Create a multiprocessing Pool
         X_tmp = pool.map(X_creation, range(n_subjects))  # proces inputs iterable with pool
 
     ### WE JUST END THE LOOP TO CREATE MATRICES X and end initializing the zscore version
@@ -289,6 +291,11 @@ elif code_run.find('serial') != -1:
             # Creation of experiment object
             exp = experiment(initial_time, final_time, n_sessions, stimulus_onsets, stimulus_durations,
                              simulated_distrib)
+
+            # # Indices of the stimuli within the frames_times array
+            # idx_stimuli_within_frames = np.zeros(exp.n_stimuli)
+            # for k in range(n_stimuli):
+            #     idx_stimuli_within_frames[k] = utils.find_nearest(simu_fmri.frame_times, exp.stimulus_onsets[k])
 
             ### LOOP OVER THE SCHEME
             for k_fit_scheme in range(n_schemes):

@@ -392,15 +392,12 @@ class fmri:
             idx_scans_within_frames[k] = utils.find_nearest(self.frame_times, self.scan_times[k])
         self.idx_scans_within_frames = idx_scans_within_frames.astype(int)
 
-    def get_bold_signal(self, exp, amplitudes, hrf_model, fmri_gain = 1):
+    def get_bold_signal(self, exp, amplitudes, hrf_model, fmri_gain=1):
         '''To get the response vector'''
-        # To get the stimuli signal within the frame_times framework
-        stim = np.zeros_like(self.frame_times)  # Contains amplitude of the stimulus in the frame_times space
-        for k in range(exp.n_stimuli):
-            stim[(self.frame_times > exp.stimulus_onsets[k])
-                 * (self.frame_times <= exp.stimulus_onsets[k] + exp.stimulus_durations[k])] \
-                = amplitudes[k]
-
+        # # To get the stimuli signal within the frame_times framework
+        # stim = np.zeros_like(self.frame_times)  # Contains amplitude of the stimulus in the frame_times space
+        # for k, idx in idx_stimuli_within_frames:
+        #     stim[idx] = amplitudes[k]
         # Build experimental condition vector
         exp_condition = np.array((exp.stimulus_onsets, exp.stimulus_durations, amplitudes[:exp.n_stimuli]))\
             .reshape(3, exp.n_stimuli)
@@ -417,7 +414,7 @@ class fmri:
         for k, idx in enumerate(self.idx_scans_within_frames):
             scan_signal[k] = signal[idx, 0]
 
-        return signal, scan_signal, name, stim
+        return signal, scan_signal, name
 
     def get_regressor(self, exp, coding_scheme, tc=[], reg_fmri_gain=1, use_high_integration_resolution=False):
         hrf_model = 'spm'    # Simple regressor computation
@@ -430,8 +427,8 @@ class fmri:
                 mu[k] = exp.distributions[k].mean
                 conf[k] = exp.distributions[k].conf
 
-            q_signal, q_scan_signal, name, stim = self.get_bold_signal(exp, mu, hrf_model)
-            conf_signal, conf_scan_signal, name, stim = self.get_bold_signal(exp, conf, hrf_model)
+            q_signal, q_scan_signal, name = self.get_bold_signal(exp, mu, hrf_model)
+            conf_signal, conf_scan_signal, name = self.get_bold_signal(exp, conf, hrf_model)
 
             X = np.array([q_scan_signal, conf_scan_signal])
             X = np.transpose(X)
@@ -450,13 +447,13 @@ class fmri:
             conf_scan_signal = np.zeros((len(self.scan_times), tc_conf.N))
 
             for i in range(tc_mu.N):
-                q_signal_tmp, q_scan_signal_tmp, name, stim = \
+                q_signal_tmp, q_scan_signal_tmp, name = \
                     self.get_bold_signal(exp, tc_mu.f(mu, i), hrf_model)
                 q_scan_signal[:, i] = q_scan_signal_tmp.reshape((len(q_scan_signal_tmp,)))
                 X[:, i] = q_scan_signal[:, i]
 
             for i in range(tc_conf.N):
-                conf_signal_tmp, conf_scan_signal_tmp, name, stim = \
+                conf_signal_tmp, conf_scan_signal_tmp, name = \
                     self.get_bold_signal(exp, tc_conf.f(conf, i), hrf_model)
                 conf_scan_signal[:, i] = conf_scan_signal_tmp.reshape((len(conf_scan_signal_tmp,)))
 
@@ -474,7 +471,7 @@ class fmri:
             for i in range(tc_mu.N):
                 # Projection calculation
                 proj = tc_mu.compute_projection(exp.distributions, i, use_high_integration_resolution)
-                signal_tmp, scan_signal_tmp, name, stim = \
+                signal_tmp, scan_signal_tmp, name = \
                     self.get_bold_signal(exp, proj, hrf_model)
                 scan_signal[:, i] = scan_signal_tmp.reshape((len(scan_signal_tmp,)))
 

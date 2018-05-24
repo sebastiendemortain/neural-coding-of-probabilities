@@ -383,8 +383,8 @@ for k_fit_scheme in range(n_schemes):
                         fraction_counter += 1
 
 
-# np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
-# np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
+np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
+np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
 np.save('output/results/rho_test_snr'+str(snr)+'.npy', rho_test)
 np.save('output/results/rho_train_snr'+str(snr)+'.npy', rho_train)
 
