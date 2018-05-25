@@ -18,10 +18,10 @@ from scipy import io as sio
 def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
 
     # Initialization of the outputs
-    p1_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    p1_mu_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    p1_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_hmm.mat'.format(n_subjects, n_sessions,
+    # p1_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    # p1_mean_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    # p1_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
+    filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions,
                                                                                          n_stimuli, distrib_type)
     # if n_subjects == 100:    # v7.3 mat file
     #     data_mat = hdf5storage.loadmat(filepath)
@@ -44,16 +44,20 @@ def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
     #             p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
     #             p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
 
+    # data_mat = sio.loadmat(filepath, struct_as_record=False)
+    # out_io = data_mat['out_io']
+    #
+    # for subject in range(n_subjects):
+    #     for session in range(n_sessions):
+    #             out_tmp = out_io[subject][session]
+    #             p1_dist_array[subject][session] = out_tmp[0, 0].p1_dist
+    #             p1_mu_array[subject][session] = out_tmp[0, 0].p1_mean
+    #             p1_sd_array[subject][session] = out_tmp[0, 0].p1_sd
+
     data_mat = sio.loadmat(filepath, struct_as_record=False)
-    out_io = data_mat['out_io']
-
-    for subject in range(n_subjects):
-        for session in range(n_sessions):
-                out_tmp = out_io[subject][session]
-                p1_dist_array[subject][session] = out_tmp[0, 0].p1_dist
-                p1_mu_array[subject][session] = out_tmp[0, 0].p1_mean
-                p1_sd_array[subject][session] = out_tmp[0, 0].p1_sd
-
+    p1_mu_array = data_mat['p1_mean_array']
+    p1_sd_array = data_mat['p1_sd_array']
+    p1_dist_array = data_mat['p1_dist_array']
 
     return [p1_dist_array, p1_mu_array, p1_sd_array]
 

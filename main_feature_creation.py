@@ -57,7 +57,7 @@ tc_upper_bound_conf = 2.6
 n_N = len(N_array)
 
 # The number of subjects
-n_subjects = 100
+n_subjects = 1000
 
 # The number of sessions
 n_sessions = 4
@@ -72,10 +72,10 @@ distrib_type = 'HMM'
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                       distrib_type)
 # # Just for now
-n_subjects = 3
-n_sessions = 4
-n_N = len(N_array)
-n_schemes = 1
+# n_subjects = 3
+# n_sessions = 4
+# n_N = len(N_array)
+# n_schemes = 1
 
 fmri_gain = 1    # Amplification of the signal
 
@@ -112,10 +112,10 @@ if code_run.find('parallel') != -1:
             # k_session = 0
 
             # Get the data of interest
-            mu = p1_mu_array[k_subject][k_session][0, :n_stimuli]
-            sigma = p1_sd_array[k_subject][k_session][0, :n_stimuli]
-            conf = -np.log(p1_sd_array[k_subject][k_session][0, :n_stimuli])
-            dist = p1_dist_array[k_subject][k_session][:, :n_stimuli]
+            mu = p1_mu_array[k_subject, k_session, :n_stimuli]
+            sigma = p1_sd_array[k_subject, k_session, :n_stimuli]
+            conf = -np.log(sigma)
+            dist = p1_dist_array[k_subject, k_session, :, :n_stimuli]
 
             # Formatting
             simulated_distrib = [None for k in range(n_stimuli)]
@@ -236,10 +236,10 @@ elif code_run.find('serial') != -1:
             # k_session = 0
 
             # Get the data of interest
-            mu = p1_mu_array[k_subject][k_session][0, :n_stimuli]
-            sigma = p1_sd_array[k_subject][k_session][0, :n_stimuli]
-            conf = -np.log(p1_sd_array[k_subject][k_session][0, :n_stimuli])
-            dist = p1_dist_array[k_subject][k_session][:, :n_stimuli]
+            mu = p1_mu_array[k_subject, k_session, :n_stimuli]
+            sigma = p1_sd_array[k_subject, k_session, :n_stimuli]
+            conf = -np.log(sigma)
+            dist = p1_dist_array[k_subject, k_session, :, :n_stimuli]
 
             # Formatting
             simulated_distrib = [None for k in range(n_stimuli)]
@@ -346,6 +346,6 @@ elif code_run.find('serial') != -1:
 
 
 # Save this matrix
-# with open("output/design_matrices/X_par1.txt", "wb") as fp:   #Pickling
-#     pickle.dump(X, fp)
+with open("output/design_matrices/X_par1.txt", "wb") as fp:   #Pickling
+    pickle.dump(X, fp)
 
