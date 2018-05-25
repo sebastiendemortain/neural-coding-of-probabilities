@@ -1,14 +1,20 @@
 clear all; close all; clc;
 
-n_subject = 100;
+n_subject = 1000;
 n_session = 4;
 
 % Sequence size
 L = 380;
+% Resolution of the distribution
+res = 50;
 
 s = cell(n_subject, n_session);
 gen_prob = cell(n_subject, n_session);
 out_io = cell(n_subject, n_session);
+
+p1_mean_array = zeros(n_subject, n_session, L);
+p1_sd_array = zeros(n_subject, n_session, L);
+p1_dist_array = zeros(n_subject, n_session, res, L);
 
 % Ideal observer for specific sequences
 p = genpath('C:\Users\Sébastien\Documents\DTU\Master thesis\code');
@@ -32,14 +38,15 @@ for i_subject=1:n_subject
         in.jump         = 1;                % estimate with jumps
         in.mode         = 'HMM';            % use the HMM (not sampling) algorithm
         in.opt.pJ       = pJump;            % a priori probability that a jump occur at each outcome
-        n               = 50;               % resolution of the univariate probability grid
+        n               = res;               % resolution of the univariate probability grid
         in.opt.pgrid    = linspace(0,1,n);  % estimation probability grid
         in.opt.Alpha0   = ones(n)/(n^2);    % uniform prior on transition probabilities
         in.verbose      = 1;                % to check that no default values are used.
         
         io_struct = IdealObserver(in);
-        p1_mean = io_struct.p1_mean;
-        p1_sd = io_struct.p1_mean;
+        p1_mean_array(i_subject, i_session, :) = io_struct.p1_mean;
+        p1_sd_array(i_subject, i_session, :) = io_struct.p1_sd;
+
         p1_dist = zeros(n, L);
         
         p1g2_dist = io_struct.p1g2_dist;
@@ -57,13 +64,19 @@ for i_subject=1:n_subject
            end
         end
         % Compute the observer
-        struct_tmp.p1_mean = p1_mean;
-        struct_tmp.p1_sd = p1_sd;
-        struct_tmp.p1_dist = p1_dist;
-        out_io{i_subject, i_session} = struct_tmp;
+        %struct_tmp.p1_mean = p1_mean;
+        %struct_tmp.p1_sd = p1_sd;
+        %struct_tmp.p1_dist = p1_dist;
+        %out_io{i_subject, i_session} = struct_tmp;
+        p1_dist_array(i_subject, i_session, :, :) = p1_dist;
     end
+    disp(strcat('Subject n°', num2str(i_subject), ' done'));
 end
+
+% Print txt file
+%fileID = fopen('p1_mean.txt','w');
+%nbytes = fprintf(fileID,'%5d %5d %5d\n',p1_mean_array);
 
 % Save the data
 savefile = strcat('data/simu/ideal_observer_',num2str(n_subject),'subjects_',num2str(n_session),'sessions_',num2str(L),'stimuli_',in.mode,'.mat');
-save(savefile, 'out_io');
+save(savefile, 'p1_mean_array', 'p1_sd_array', 'p1_dist_array');
