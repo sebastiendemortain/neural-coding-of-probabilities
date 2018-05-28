@@ -67,7 +67,7 @@ tc_upper_bound_conf = 2.6
 n_N = len(N_array)
 
 # The number of fractions tested (related to W)
-n_fractions = 4000#
+n_fractions = 1000#
 
 # Sparsity exponents
 sparsity_exp_array = np.array([1, 2, 4, 8])
@@ -85,9 +85,7 @@ n_stimuli = 380
 # Way to compute the distributions from the sequence
 distrib_type = 'HMM'
 
-# Load the corresponding data
-[p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
-                                                                                      distrib_type)
+
 
 # # Load the corresponding data
 # [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
@@ -406,7 +404,7 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
         #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
         #         r2_score(y_test, y_pred), r2_train))
     print('k_scheme : ' + str(k_scheme) + '\n' + 'k_fit_N = ' + str(k_fit_N) + '\nk_true_N = ' + str(
-        k_true_N) + '\nk_fraction=' + str(k_fraction) + '\nk_subject n°' + str(k_subject) + '\n -----')
+        k_true_N) + '\nk_fraction=' + str(k_fraction) + '\nk_subject n' + str(k_subject) + '\n -----')
 # Histogram of r2_train for each fit_N and true_N
 
 # np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
