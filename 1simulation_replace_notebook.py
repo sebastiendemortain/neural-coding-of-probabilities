@@ -175,32 +175,31 @@ for k_scheme in range(n_schemes):
             true_tc = [true_tc_mu]
         elif true_scheme.find('rate') != -1:
             true_tc = []
+        ### LOOP OVER THE SUBJECTS
+        for k_subject in range(n_subjects):
+            ### LOOP OVER THE W's
+            # The number of subpopulation fractions acc. to the scheme
+            n_subpopulation_fractions = int(n_fractions / n_population_fractions)
+            fraction_counter = 0
+            for k_subpopulation_fraction in range(n_subpopulation_fractions):
+                for k_population_fraction, population_fraction in enumerate(population_fraction_array):
+                    # The number of populations acc. to the scheme (2 for PPC and rate, 1 for DPC)
+                    n_population = len(population_fraction)
+                    if true_scheme.find('ppc') != -1 or true_scheme.find('dpc') != -1:
+                        # We consider one sparsity per remainder value of the counter divided by the number
+                        # of combinations to be tested
+                        subpopulation_sparsity_exp = sparsity_exp_array[fraction_counter % n_sparsity_exp]
+                        # Fraction of each neural subpopulation
+                        subpopulation_fraction = neural_proba.get_subpopulation_fraction(n_population, true_N,
+                                                                                         subpopulation_sparsity_exp)
+                    else:  # Rate case
+                        population_fraction = np.array([1, 1])
 
-        ### LOOP OVER THE W's
-        # The number of subpopulation fractions acc. to the scheme
-        n_subpopulation_fractions = int(n_fractions / n_population_fractions)
-        fraction_counter = 0
-        for k_subpopulation_fraction in range(n_subpopulation_fractions):
-            for k_population_fraction, population_fraction in enumerate(population_fraction_array):
-                # The number of populations acc. to the scheme (2 for PPC and rate, 1 for DPC)
-                n_population = len(population_fraction)
-                if true_scheme.find('ppc') != -1 or true_scheme.find('dpc') != -1:
-                    # We consider one sparsity per remainder value of the counter divided by the number
-                    # of combinations to be tested
-                    subpopulation_sparsity_exp = sparsity_exp_array[fraction_counter % n_sparsity_exp]
-                    # Fraction of each neural subpopulation
-                    subpopulation_fraction = neural_proba.get_subpopulation_fraction(n_population, true_N,
-                                                                                     subpopulation_sparsity_exp)
-                else:  # Rate case
-                    population_fraction = np.array([1, 1])
+                    # Generate the data from the voxel
+                    true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction, true_tc)
+                    n_true_features = n_population * true_N
+                    weights_tmp = copy.deepcopy(np.reshape(true_voxel.weights, (n_true_features,)))
 
-                # Generate the data from the voxel
-                true_voxel = voxel(true_scheme, population_fraction, subpopulation_fraction, true_tc)
-                n_true_features = n_population * true_N
-                weights_tmp = copy.deepcopy(np.reshape(true_voxel.weights, (n_true_features,)))
-
-                ### LOOP OVER THE SUBJECTS
-                for k_subject in range(n_subjects):
                     # Allocation of the weight tensor
                     weights[k_scheme][k_true_N][fraction_counter][k_subject] \
                         = copy.deepcopy(weights_tmp)
@@ -217,7 +216,7 @@ for k_scheme in range(n_schemes):
                                 k_session] = copy.deepcopy(y_tmp)
 
 
-                fraction_counter += 1
+                    fraction_counter += 1
 
 y_without_noise = copy.deepcopy(y)
 # with open("output/design_matrices/y_20sub.txt", "wb") as fp:   #Pickling
