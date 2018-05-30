@@ -371,10 +371,6 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
         y_pred2 = regr2.predict(y_pred_tmp)
 
         # Train and test results
-        r2_test_unique = r2_score(y_without_noise_test, y_pred2)
-        r2_train_unique = r2_score(y_train, y_hat_train)
-        rho_train_unique = pearsonr(y_train, y_hat_train)[0]
-        rho_test_unique = pearsonr(y_without_noise_test, y_pred2)[0]
 
         r2_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
             = r2_score(y_train, y_hat_train)
