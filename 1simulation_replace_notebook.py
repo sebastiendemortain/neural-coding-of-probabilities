@@ -66,7 +66,7 @@ tc_upper_bound_conf = 2.6
 # The number of N to be tested
 n_N = len(N_array)
 
-# The number of fractions tested (related to W)
+# The number of fractions tested "(related to W)
 n_fractions = 20#
 
 # Sparsity exponents
