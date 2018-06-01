@@ -39,7 +39,7 @@ import utils
 # All parameters are here
 
 # Define the seed to reproduce results from random processes
-rand.seed(5);
+rand.seed(10);
 
 # INPUTS
 
@@ -90,6 +90,9 @@ distrib_type = 'HMM'
 # # Load the corresponding data
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                        distrib_type)
+
+
+n_subjects = 300
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
 snr = 0.1
@@ -219,8 +222,6 @@ for k_scheme in range(n_schemes):
                     fraction_counter += 1
 
 y_without_noise = copy.deepcopy(y)
-with open("output/response/y_without_noise.txt", "wb") as fp:   #Pickling
-    pickle.dump(y_without_noise, fp)
 
 # Compute the amplitude of the noise
 noise_sd = np.zeros((n_schemes, n_N))
@@ -242,8 +243,6 @@ for k_scheme, k_true_N, k_fraction, k_subject, k_session in itertools.product(ra
 
 y_with_noise = copy.deepcopy(y)
 
-with open("output/response/y_with_noise.txt", "wb") as fp:   #Pickling
-    pickle.dump(y_with_noise, fp)
 
 
 # Create the filtering design matrices and filters out the response
@@ -263,9 +262,6 @@ for k_scheme, k_true_N, k_fraction, k_subject, k_sessions in itertools.product(r
     y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_tmp)
 
 y_after_filtering = copy.deepcopy(y)
-
-with open("output/response/y_after_filtering.txt", "wb") as fp:   #Pickling
-    pickle.dump(y_after_filtering, fp)
 
 
 # # To visualize the matrix
@@ -329,11 +325,6 @@ for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
                     k_scheme, k_true_N]  # Centering+standardization
 
         ### End of z-scoring of y
-
-with open("output/response/yz.txt", "wb") as fp:   #Pickling
-    pickle.dump(yz, fp)
-with open("output/response/yz_without_noise.txt", "wb") as fp:  # Pickling
-        pickle.dump(yz, fp)
 
 # Reajusting the weights after zscoring
 for k_scheme, k_true_N, k_fraction, k_subject in itertools.product(range(n_schemes), range(n_N), range(n_fractions),
@@ -420,6 +411,8 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
         r2_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
             = r2_score(y_without_noise_test, y_pred2)
 
+        fit_weights = regr.coef_
+
         # with open("output/results/Output.txt", "w") as text_file:
         #     text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
         #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
@@ -427,6 +420,19 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
         # print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \nr2_train={}'.format(
         #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
         #         r2_score(y_test, y_pred), r2_train))
+        np.save('output/response/y_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_test)
+        np.save('output/response/y_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_train)
+
+        np.save('output/response/y_without_noise_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_test)
+        np.save('output/response/y_without_noise_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_train)
+
+        np.save('output/response/y_hat_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_hat_train)
+
+        np.save('output/response/y_pred-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred)
+        np.save('output/response/y_pred2-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred2)
+
+        np.save('output/response/fit_weights-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', fit_weights)
+
     # print('k_scheme : '+str(k_scheme)+'\n'+'k_fit_N = '+str(k_fit_N)+'\nk_true_N = '+str(k_true_N)+'\nk_fraction='+str(k_fraction)+'\nk_subject n°'+str(k_subject)+'\n -----')
 # Histogram of r2_train for each fit_N and true_N
 
@@ -448,5 +454,5 @@ np.save('output/results/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
 np.save('output/results/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
 np.save('output/results/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
 
-with open("output/response/y_pred2_all.txt", "wb") as fp:  # Pickling
-    pickle.dump(y_pred2_all, fp)
+# with open("output/response/y_pred2_all.txt", "wb") as fp:  # Pickling
+#     pickle.dump(y_pred2_all, fp)
