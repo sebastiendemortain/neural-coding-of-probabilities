@@ -92,7 +92,8 @@ distrib_type = 'HMM'
                                                                                        distrib_type)
 
 
-n_subjects = 300
+
+n_subjects = 1
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
 snr = 0.1
@@ -230,16 +231,14 @@ for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
     all_y = np.asarray(y[k_scheme][k_true_N]).flatten()  # Concatenation of all y grouped together for SNR computation
     # print(all_y[0])
     noise_sd[k_scheme, k_true_N] = np.sqrt(np.var(all_y[0]) * (1 / snr - 1))  # std of the added gaussian noise
-    added_noise[k_scheme, k_true_N, :] = np.random.normal(0, noise_sd[k_scheme, k_true_N], 1000)
     del all_y    # Free memory
 
 # Add the noise
 for k_scheme, k_true_N, k_fraction, k_subject, k_session in itertools.product(range(n_schemes), range(n_N),
                                                                               range(n_fractions), range(n_subjects),
                                                                               range(n_sessions)):
-    y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = y[k_scheme][k_true_N][k_fraction][k_subject][
-                                                                  k_session] + added_noise[k_scheme, k_true_N, :len(
-        y[k_scheme][k_true_N][k_fraction][k_subject][k_session])]
+    y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = y[k_scheme][k_true_N][k_fraction][k_subject][k_session] \
+                                                              + np.random.normal(0, noise_sd[k_scheme, k_true_N], len(y[k_scheme][k_true_N][k_fraction][k_subject][k_session]))
 
 y_with_noise = copy.deepcopy(y)
 

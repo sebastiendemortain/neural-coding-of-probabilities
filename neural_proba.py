@@ -105,8 +105,8 @@ class tuning_curve:
                 mean = self.percentiles[idx]
             # Variance of the tuning curve
             sigma2_f = self.t**2
-            tc_value = 1/(np.sqrt(2*np.pi*sigma2_f))*np.exp(-0.5*(x-mean)**2/sigma2_f)
-            #tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
+            #tc_value = 1/(np.sqrt(2*np.pi*sigma2_f))*np.exp(-0.5*(x-mean)**2/sigma2_f)
+            tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
             return tc_value
         elif (self.tc_type=='sigmoid'):
             n = self.N/2    # Number of tuning curve of the same monotony
@@ -249,6 +249,7 @@ def get_population_fraction(scheme, population_sparsity_exp = 1):
 
 def get_subpopulation_fraction(n_population, n_subpopulation, subpopulation_sparsity_exp = 1):
     # Fraction of each neural population
+    print(type(n_subpopulation))
     subpopulation_fraction = np.zeros([n_population, n_subpopulation])
     n_neuron = np.zeros([n_population, n_subpopulation])  # Number of neuron per subpopulation
     n_total_neuron = np.zeros(n_population)
