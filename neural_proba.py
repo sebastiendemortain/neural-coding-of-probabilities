@@ -249,7 +249,6 @@ def get_population_fraction(scheme, population_sparsity_exp = 1):
 
 def get_subpopulation_fraction(n_population, n_subpopulation, subpopulation_sparsity_exp = 1):
     # Fraction of each neural population
-    print(type(n_subpopulation))
     subpopulation_fraction = np.zeros([n_population, n_subpopulation])
     n_neuron = np.zeros([n_population, n_subpopulation])  # Number of neuron per subpopulation
     n_total_neuron = np.zeros(n_population)

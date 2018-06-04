@@ -90,10 +90,7 @@ distrib_type = 'HMM'
 # # Load the corresponding data
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                        distrib_type)
-
-
-
-n_subjects = 1
+n_subjects = 700
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
 snr = 0.1
@@ -332,8 +329,8 @@ for k_scheme, k_true_N, k_fraction, k_subject in itertools.product(range(n_schem
         weights[k_scheme][k_true_N][k_fraction][k_subject][feature] = \
         weights[k_scheme][k_true_N][k_fraction][k_subject][feature] * scaling_factor_X / y_sd[k_scheme, k_true_N]
 
-with open("output/response/weights.txt", "wb") as fp:   #Pickling
-    pickle.dump(weights, fp)
+# with open("output/response/weights.txt", "wb") as fp:   #Pickling
+#     pickle.dump(weights, fp)
 
 # The loops
 # The quantity to be computed during the cross validation
@@ -353,88 +350,90 @@ y_pred2_all = [[[[[None for k_session in range(n_sessions)] for k_subject in ran
 
 
 ### BEGINNING OF LOOPS OVER HYPERPARAMETERS
-for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(range(n_schemes),
-                                                                            range(n_N), range(n_N), range(n_fractions),
-                                                                            range(n_subjects)):
-    # Current cross-validation matrix and response
-    X_cv = copy.deepcopy(Xz[k_scheme][k_fit_N][k_subject])
-    y_cv = copy.deepcopy(yz[k_scheme][k_true_N][k_fraction][k_subject])
-    y_without_noise_cv = copy.deepcopy(yz_without_noise[k_scheme][k_true_N][k_fraction][k_subject])
+for k_scheme, k_fit_N, k_true_N, k_fraction in itertools.product(range(n_schemes),
+                                                                            range(n_N), range(n_N), range(n_fractions)):
 
-    # LOOP OVER SESSIONS (CV)
-    for k_session in range(n_sessions):
-        X_train = copy.deepcopy(np.concatenate(X_cv[:k_session] + X_cv[k_session + 1:], axis=0))
-        y_train = copy.deepcopy(np.concatenate(y_cv[:k_session] + y_cv[k_session + 1:], axis=0))
-        X_test = copy.deepcopy(X_cv[k_session])
-        y_test = copy.deepcopy(y_cv[k_session])
+    for k_subject in range(n_subjects):
+        # Current cross-validation matrix and response
+        X_cv = copy.deepcopy(Xz[k_scheme][k_fit_N][k_subject])
+        y_cv = copy.deepcopy(yz[k_scheme][k_true_N][k_fraction][k_subject])
+        y_without_noise_cv = copy.deepcopy(yz_without_noise[k_scheme][k_true_N][k_fraction][k_subject])
 
-        y_without_noise_train = copy.deepcopy(
-            np.concatenate(y_without_noise_cv[:k_session] + y_without_noise_cv[k_session + 1:], axis=0))
-        y_without_noise_test = copy.deepcopy(y_without_noise_cv[k_session])
+        # LOOP OVER SESSIONS (CV)
+        for k_session in range(n_sessions):
+            X_train = copy.deepcopy(np.concatenate(X_cv[:k_session] + X_cv[k_session + 1:], axis=0))
+            y_train = copy.deepcopy(np.concatenate(y_cv[:k_session] + y_cv[k_session + 1:], axis=0))
+            X_test = copy.deepcopy(X_cv[k_session])
+            y_test = copy.deepcopy(y_cv[k_session])
 
-        # Train the model using the training set
-        regr.fit(X_train, y_train)
-        y_hat_train = regr.predict(X_train)
-        # Make predictions using the testing set
-        y_pred = regr.predict(X_test)
-        y_pred_tmp = np.transpose(np.array([y_pred]))
+            y_without_noise_train = copy.deepcopy(
+                np.concatenate(y_without_noise_cv[:k_session] + y_without_noise_cv[k_session + 1:], axis=0))
+            y_without_noise_test = copy.deepcopy(y_without_noise_cv[k_session])
 
-        # Second fit
-        regr2.fit(y_pred_tmp, y_test)
-        y_pred2 = regr2.predict(y_pred_tmp)
+            # Train the model using the training set
+            regr.fit(X_train, y_train)
+            y_hat_train = regr.predict(X_train)
+            # Make predictions using the testing set
+            y_pred = regr.predict(X_test)
+            y_pred_tmp = np.transpose(np.array([y_pred]))
 
-        y_pred2_all[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_pred2)
+            # Second fit
+            regr2.fit(y_pred_tmp, y_test)
+            y_pred2 = regr2.predict(y_pred_tmp)
 
-        # Train and test results
-        r2_test_unique = r2_score(y_without_noise_test, y_pred2)
-        r2_train_unique = r2_score(y_train, y_hat_train)
-        rho_train_unique = pearsonr(y_train, y_hat_train)[0]
-        rho_test_unique = pearsonr(y_without_noise_test, y_pred2)[0]
+            y_pred2_all[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_pred2)
 
-        r2_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_train, y_hat_train)
-        r2_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_test, y_pred2)
-        rho_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_train, y_hat_train)[0]
-        rho_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_test, y_pred2)[0]
-        rho_true_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_without_noise_train, y_hat_train)[0]
-        rho_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = pearsonr(y_without_noise_test, y_pred2)[0]
+            # Train and test results
+            r2_test_unique = r2_score(y_without_noise_test, y_pred2)
+            r2_train_unique = r2_score(y_train, y_hat_train)
+            rho_train_unique = pearsonr(y_train, y_hat_train)[0]
+            rho_test_unique = pearsonr(y_without_noise_test, y_pred2)[0]
 
-        r2_true_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_without_noise_train, y_hat_train)
+            r2_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = r2_score(y_train, y_hat_train)
+            r2_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = r2_score(y_test, y_pred2)
+            rho_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = pearsonr(y_train, y_hat_train)[0]
+            rho_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = pearsonr(y_test, y_pred2)[0]
+            rho_true_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = pearsonr(y_without_noise_train, y_hat_train)[0]
+            rho_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = pearsonr(y_without_noise_test, y_pred2)[0]
 
-        r2_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
-            = r2_score(y_without_noise_test, y_pred2)
+            r2_true_train[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = r2_score(y_without_noise_train, y_hat_train)
 
-        fit_weights = regr.coef_
+            r2_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
+                = r2_score(y_without_noise_test, y_pred2)
 
-        # with open("output/results/Output.txt", "w") as text_file:
-        #     text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
-        #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-        #         r2_score(y_test, y_pred)))
-        # print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \nr2_train={}'.format(
-        #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
-        #         r2_score(y_test, y_pred), r2_train))
-        np.save('output/response/y_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_test)
-        np.save('output/response/y_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_train)
+            fit_weights = regr.coef_
 
-        np.save('output/response/y_without_noise_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_test)
-        np.save('output/response/y_without_noise_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_train)
+            print('Subject n'+str(k_subject)+' done!')
 
-        np.save('output/response/y_hat_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_hat_train)
-
-        np.save('output/response/y_pred-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred)
-        np.save('output/response/y_pred2-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred2)
-
-        np.save('output/response/fit_weights-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', fit_weights)
+            # with open("output/results/Output.txt", "w") as text_file:
+            #     text_file.write('k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \n'.format(
+            #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+            #         r2_score(y_test, y_pred)))
+            # print('Completed : k_fit_scheme={} k_fit_N={} k_true_N={} k_subject={} k_population_fraction={} k_subpopulation_fraction={} k_session={} \nr2={} \nr2_train={}'.format(
+            #         k_fit_scheme, k_fit_N, k_true_N, k_subject, k_population_fraction, k_subpopulation_fraction, k_session,
+            #         r2_score(y_test, y_pred), r2_train))
+            # np.save('output/response/y_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_test)
+            # np.save('output/response/y_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_train)
+            #
+            # np.save('output/response/y_without_noise_test-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_test)
+            # np.save('output/response/y_without_noise_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_without_noise_train)
+            #
+            # np.save('output/response/y_hat_train-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_hat_train)
+            #
+            # np.save('output/response/y_pred-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred)
+            # np.save('output/response/y_pred2-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', y_pred2)
+            #
+            # np.save('output/response/fit_weights-k_scheme'+str(k_scheme)+'-k_fit_N'+str(k_fit_N)+'-k_fraction'+str(k_fraction)+'-k_subject'+str(k_subject)+'-k_session'+str(k_session)+'.npy', fit_weights)
 
     # print('k_scheme : '+str(k_scheme)+'\n'+'k_fit_N = '+str(k_fit_N)+'\nk_true_N = '+str(k_true_N)+'\nk_fraction='+str(k_fraction)+'\nk_subject n°'+str(k_subject)+'\n -----')
 # Histogram of r2_train for each fit_N and true_N
-
 # np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
 # np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
 # np.save('output/results/rho_test_snr'+str(snr)+'.npy', rho_test)
