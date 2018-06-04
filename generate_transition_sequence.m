@@ -1,4 +1,4 @@
-function [s, gen_prob] = generate_sequence(L, pJump)
+function [s, gen_prob] = generate_transition_sequence(L, pJump)
 % [s, gen_prob] = generate_sequence(L, pJump)
 % 
 % This function generates a random binary sequence (s), based on "jumping" 
@@ -42,7 +42,8 @@ end
 %     heaviside = @(x) double(x > 0);
 % end
 
-% check whether heaviside is known
+% check whether heaviside is known (Sebastien Demortain's modif to make it
+% work)
 is_heaviside_defined = exist('heaviside');
 if (is_heaviside_defined~=0)
     heaviside = @(x) double(x > 0);
