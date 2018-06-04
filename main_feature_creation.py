@@ -29,7 +29,7 @@ from neural_proba import fmri
 import utils
 
 # Define the seed to reproduce results from random processes
-rand.seed(5);
+rand.seed(10);
 
 # INPUTS
 
@@ -38,10 +38,15 @@ scheme_array = ['gaussian_ppc', 'sigmoid_ppc', 'gaussian_dpc', 'sigmoid_dpc']
 n_schemes = len(scheme_array)
 
 # The parameters related to the tuning curves to be explored
-N_array = np.array([2, 4, 6, 8, 10, 14, 20])
+N_array = np.array([2, 3, 4, 5, 6, 7, 8, 10, 14, 20])
 
-t_mu_gaussian_array = np.array([0.15, 0.1, 7e-2, 5e-2, 4e-2, 3e-2, 2e-2])
-t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
+t_mu_gaussian_array = np.array([0.15, 0.12, 0.1, 8e-2, 7e-2, 6e-2, 5e-2, 4e-2, 3e-2, 2e-2])
+t_conf_gaussian_array = np.array([0.25, 0.2, 0.15, 0.12, 0.10, 9e-2, 8e-2, 6e-2, 4e-2, 3e-2])
+
+# N_array = np.array([2, 4, 6, 8, 10, 14, 20])
+#
+# t_mu_gaussian_array = np.array([0.15, 0.1, 7e-2, 5e-2, 4e-2, 3e-2, 2e-2])
+# t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
 
 t_mu_sigmoid_array = np.sqrt(2*np.pi)/4*t_mu_gaussian_array
 t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
@@ -66,7 +71,7 @@ n_sessions = 4
 n_stimuli = 380
 
 # Way to compute the distributions from the sequence
-distrib_type = 'HMM'
+distrib_type = 'transition'
 
 # Load the corresponding data
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
@@ -346,6 +351,6 @@ elif code_run.find('serial') != -1:
 
 
 # Save this matrix
-with open("output/design_matrices/X_par1.txt", "wb") as fp:   #Pickling
+with open("output/design_matrices/X1_trans_all.txt", "wb") as fp:   #Pickling
     pickle.dump(X, fp)
 

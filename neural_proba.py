@@ -21,38 +21,12 @@ def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
     # p1_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     # p1_mean_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     # p1_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    filepath = 'data/simu/ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions,
+    if distrib_type=='transition':
+        filepath = 'data/simu/transition_ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions,
                                                                                          n_stimuli, distrib_type)
-    # if n_subjects == 100:    # v7.3 mat file
-    #     data_mat = hdf5storage.loadmat(filepath)
-    #     data_mat = data_mat['out_io']
-    #     for subject in range(n_subjects):
-    #         for session in range(n_sessions):
-    #             out_tmp = data_mat[subject][session]
-    #             p1g2_dist_array[subject][session] = out_tmp[0][2]
-    #             p1g2_mu_array[subject][session] = out_tmp[0][4][0]
-    #             p1g2_sd_array[subject][session] = out_tmp[0][5][0]
-    #
-    # else:
-    # data_mat = sio.loadmat(filepath, struct_as_record=False)
-    # out = data_mat['out_io']
-    #
-    # for subject in range(n_subjects):
-    #     for session in range(n_sessions):
-    #             out_tmp = out[subject][session]
-    #             p1g2_dist_array[subject][session] = out_tmp[0, 0].p1g2_dist
-    #             p1g2_mu_array[subject][session] = out_tmp[0, 0].p1g2_mean
-    #             p1g2_sd_array[subject][session] = out_tmp[0, 0].p1g2_sd
-
-    # data_mat = sio.loadmat(filepath, struct_as_record=False)
-    # out_io = data_mat['out_io']
-    #
-    # for subject in range(n_subjects):
-    #     for session in range(n_sessions):
-    #             out_tmp = out_io[subject][session]
-    #             p1_dist_array[subject][session] = out_tmp[0, 0].p1_dist
-    #             p1_mu_array[subject][session] = out_tmp[0, 0].p1_mean
-    #             p1_sd_array[subject][session] = out_tmp[0, 0].p1_sd
+    elif distrib_type=='bernoulli':
+        filepath = 'data/simu/bernoulli_ideal_observer_{}subjects_{}sessions_{}stimuli.mat'.format(n_subjects, n_sessions,
+                                                                                                    n_stimuli, distrib_type)
 
     data_mat = sio.loadmat(filepath, struct_as_record=False)
     p1_mu_array = data_mat['p1_mean_array']
