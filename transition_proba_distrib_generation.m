@@ -1,6 +1,8 @@
 clear all; close all; clc;
 
-n_subject = 1000;
+% Number of subjects to be generated
+n_subject = 5;
+% Number of sessions to be generated
 n_session = 4;
 
 % Sequence size
@@ -8,10 +10,7 @@ L = 380;
 % Resolution of the distribution
 res = 50;
 
-s = cell(n_subject, n_session);
-gen_prob = cell(n_subject, n_session);
-out_io = cell(n_subject, n_session);
-
+% Initialization of the outputs
 p1_mean_array = zeros(n_subject, n_session, L);
 p1_sd_array = zeros(n_subject, n_session, L);
 p1_dist_array = zeros(n_subject, n_session, res, L);
@@ -24,10 +23,7 @@ for i_subject=1:n_subject
     for i_session=1:n_session
         [s_tmp, gen_prob_tmp] = generate_sequence(L);
 
-        s{i_subject, i_session} = s_tmp;
-        gen_prob{i_subject, i_session} = gen_prob_tmp;
-
-        %% EXAMPLE 1: COMPUTE THE IDEAL OBSERVER WITH JUMPS (HMM)
+        %% COMPUTE THE IDEAL OBSERVER WITH JUMPS (HMM)
         %  ======================================================
 
         pJump = 1/75; % Value by default
@@ -44,6 +40,7 @@ for i_subject=1:n_subject
         in.verbose      = 1;                % to check that no default values are used.
         
         io_struct = IdealObserver(in);
+        % Fills mean and std
         p1_mean_array(i_subject, i_session, :) = io_struct.p1_mean;
         p1_sd_array(i_subject, i_session, :) = io_struct.p1_sd;
 
@@ -63,19 +60,11 @@ for i_subject=1:n_subject
                print('Error');
            end
         end
-        % Compute the observer
-        %struct_tmp.p1_mean = p1_mean;
-        %struct_tmp.p1_sd = p1_sd;
-        %struct_tmp.p1_dist = p1_dist;
-        %out_io{i_subject, i_session} = struct_tmp;
+        % Fills p1_dist
         p1_dist_array(i_subject, i_session, :, :) = p1_dist;
     end
     disp(strcat('Subject n°', num2str(i_subject), ' done'));
 end
-
-% Print txt file
-%fileID = fopen('p1_mean.txt','w');
-%nbytes = fprintf(fileID,'%5d %5d %5d\n',p1_mean_array);
 
 % Save the data
 savefile = strcat('data/simu/ideal_observer_',num2str(n_subject),'subjects_',num2str(n_session),'sessions_',num2str(L),'stimuli_',in.mode,'.mat');
