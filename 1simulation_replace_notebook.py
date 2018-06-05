@@ -48,10 +48,10 @@ scheme_array = ['gaussian_ppc', 'sigmoid_ppc', 'gaussian_dpc', 'sigmoid_dpc']
 n_schemes = len(scheme_array)
 
 # The parameters related to the tuning curves to be explored
-N_array = np.array([2, 4, 6, 8, 10, 14, 20])
+N_array = np.array([2, 3, 4, 5, 6, 7, 8, 10, 14, 20])
 
-t_mu_gaussian_array = np.array([0.15, 0.1, 7e-2, 5e-2, 4e-2, 3e-2, 2e-2])
-t_conf_gaussian_array = np.array([0.25, 0.15, 0.10, 8e-2, 6e-2, 4e-2, 3e-2])
+t_mu_gaussian_array = np.array([0.15, 0.12, 0.1, 8e-2, 7e-2, 6e-2, 5e-2, 4e-2, 3e-2, 2e-2])
+t_conf_gaussian_array = np.array([0.25, 0.2, 0.15, 0.12, 0.10, 9e-2, 8e-2, 6e-2, 4e-2, 3e-2])
 
 t_mu_sigmoid_array = np.sqrt(2*np.pi)/4*t_mu_gaussian_array
 t_conf_sigmoid_array = np.sqrt(2*np.pi)/4*t_conf_gaussian_array
