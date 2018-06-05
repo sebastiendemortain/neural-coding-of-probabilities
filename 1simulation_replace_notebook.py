@@ -83,7 +83,7 @@ n_sessions = 4
 n_stimuli = 380
 
 # Way to compute the distributions from the sequence
-distrib_type = 'bernoulli'
+distrib_type = 'transition'
 
 
 
@@ -105,7 +105,7 @@ if distrib_type == 'bernoulli':
     with open("output/design_matrices/X1_bernoulli_all.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
         X = pickle.load(fp)
 
-if distrib_type == 'bernoulli':
+if distrib_type == 'transition':
     with open("output/design_matrices/X1_transition_all.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
         X = pickle.load(fp)
 whitening_done = False
@@ -274,7 +274,7 @@ W = white_mat['W']
 W[300:600, 300:600] = W[20:320, 20:320]
 
 if not whitening_done:
-    # Multiplying the zscored X with the whitening matrix
+    # Multiplying X with the whitening matrix
     for k_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
         X_tmp = copy.deepcopy(X[k_scheme][k_fit_N][k_subject][k_session])    # Just to lighten code
         rows_dim, columns_dim = X_tmp.shape
