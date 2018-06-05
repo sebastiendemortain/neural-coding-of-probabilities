@@ -83,13 +83,14 @@ n_sessions = 4
 n_stimuli = 380
 
 # Way to compute the distributions from the sequence
-distrib_type = 'HMM'
+distrib_type = 'bernoulli'
 
 
 
 # # Load the corresponding data
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                        distrib_type)
+
 n_subjects = 1
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
@@ -100,31 +101,18 @@ regr = linear_model.LinearRegression(fit_intercept=True, n_jobs=-1)
 regr2 = linear_model.LinearRegression(fit_intercept=True, n_jobs=-1)
 # # Load the design matrices and specify their size
 # Load the design matrices and specify their size
-with open("output/design_matrices/X_par1.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
-    X = pickle.load(fp)
+if distrib_type == 'bernoulli':
+    with open("output/design_matrices/X1_bernoulli_all.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
+        X = pickle.load(fp)
+
+if distrib_type == 'bernoulli':
+    with open("output/design_matrices/X1_transition_all.txt", "rb") as fp: #X_20sub_f.txt", "rb") as fp:   # Unpickling
+        X = pickle.load(fp)
 whitening_done = False
 
 #
 fmri_gain = 1    # Amplification of the signal
-# Whiten the design matrices
 
-# Whitening matrix
-white_mat = sio.loadmat('data/simu/whitening_matrix.mat')
-W = white_mat['W']
-# Complete the in-between session "holes"
-W[300:600, 300:600] = W[20:320, 20:320]
-
-if not whitening_done:
-    # Multiplying the zscored X with the whitening matrix
-    for k_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
-        X_tmp = copy.deepcopy(X[k_scheme][k_fit_N][k_subject][k_session])    # Just to lighten code
-        rows_dim, columns_dim = X_tmp.shape
-        X_tmp = np.matmul(W[:rows_dim, :rows_dim], X_tmp)
-        X[k_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp)
-
-whitening_done = True
-
-X_after_whitening = copy.deepcopy(X)
 
 # Creation of y from X to save computational resources
 # Initialization of the response vectors
@@ -241,6 +229,8 @@ for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
 
 y_without_noise = copy.deepcopy(y)
 
+
+
 # Compute the amplitude of the noise
 noise_sd = np.zeros((n_schemes, n_N))
 for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
@@ -274,6 +264,27 @@ for k_scheme, k_true_N, k_fraction, k_subject, k_sessions in itertools.product(r
     y[k_scheme][k_true_N][k_fraction][k_subject][k_session] = copy.deepcopy(y_tmp)
 
 y_after_filtering = copy.deepcopy(y)
+
+# Whiten the design matrices
+
+# Whitening matrix
+white_mat = sio.loadmat('data/simu/whitening_matrix.mat')
+W = white_mat['W']
+# Complete the in-between session "holes"
+W[300:600, 300:600] = W[20:320, 20:320]
+
+if not whitening_done:
+    # Multiplying the zscored X with the whitening matrix
+    for k_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
+        X_tmp = copy.deepcopy(X[k_scheme][k_fit_N][k_subject][k_session])    # Just to lighten code
+        rows_dim, columns_dim = X_tmp.shape
+        X_tmp = np.matmul(W[:rows_dim, :rows_dim], X_tmp)
+        X[k_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp)
+
+whitening_done = True
+
+X_after_whitening = copy.deepcopy(X)
+
 
 # Z-scoring of X and y
 
@@ -396,15 +407,23 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
         r2_true_test[k_scheme, k_fit_N, k_true_N, k_fraction, k_subject, k_session] \
             = r2_score(y_without_noise_test, y_pred2)
 
+if distrib_type == 'bernoulli':
+    np.save('output/results/bernoulli/all/r2_test_snr'+str(snr)+'.npy', r2_test)
+    np.save('output/results/bernoulli/all/r2_train_snr'+str(snr)+'.npy', r2_train)
+    np.save('output/results/bernoulli/all/rho_test_snr'+str(snr)+'.npy', rho_test)
+    np.save('output/results/bernoulli/all/rho_train_snr'+str(snr)+'.npy', rho_train)
+    np.save('output/results/bernoulli/all/r2_true_test_snr'+str(snr)+'.npy', r2_true_test)
+    np.save('output/results/bernoulli/all/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
+    np.save('output/results/bernoulli/all/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
+    np.save('output/results/bernoulli/all/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
 
-np.save('output/results/r2_test_snr'+str(snr)+'.npy', r2_test)
-np.save('output/results/r2_train_snr'+str(snr)+'.npy', r2_train)
-np.save('output/results/rho_test_snr'+str(snr)+'.npy', rho_test)
-np.save('output/results/rho_train_snr'+str(snr)+'.npy', rho_train)
-np.save('output/results/r2_true_test_snr'+str(snr)+'.npy', r2_true_test)
-np.save('output/results/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
-np.save('output/results/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
-np.save('output/results/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
+if distrib_type == 'transition':
+    np.save('output/results/transition/all/r2_test_snr'+str(snr)+'.npy', r2_test)
+    np.save('output/results/transition/all/r2_train_snr'+str(snr)+'.npy', r2_train)
+    np.save('output/results/transition/all/rho_test_snr'+str(snr)+'.npy', rho_test)
+    np.save('output/results/transition/all/rho_train_snr'+str(snr)+'.npy', rho_train)
+    np.save('output/results/transition/all/r2_true_test_snr'+str(snr)+'.npy', r2_true_test)
+    np.save('output/results/transition/all/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
+    np.save('output/results/transition/all/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
+    np.save('output/results/transition/all/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
 
-# with open("output/response/y_pred2_all.txt", "wb") as fp:  # Pickling
-#     pickle.dump(y_pred2_all, fp)
