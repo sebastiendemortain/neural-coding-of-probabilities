@@ -83,7 +83,7 @@ n_sessions = 4
 n_stimuli = 380
 
 # Way to compute the distributions from the sequence
-distrib_type = 'transition'
+distrib_type = 'bernoulli'
 
 
 
@@ -91,10 +91,10 @@ distrib_type = 'transition'
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                        distrib_type)
 
-n_subjects = 1
+n_subjects = 400
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
-snr = 0.1
+snr = 1
 
 # Type of regression
 regr = linear_model.LinearRegression(fit_intercept=True, n_jobs=-1)
@@ -113,6 +113,25 @@ whitening_done = False
 #
 fmri_gain = 1    # Amplification of the signal
 
+# Whiten the design matrices
+
+# Whitening matrix
+white_mat = sio.loadmat('data/simu/whitening_matrix.mat')
+W = white_mat['W']
+# Complete the in-between session "holes"
+W[300:600, 300:600] = W[20:320, 20:320]
+
+if not whitening_done:
+    # Multiplying X with the whitening matrix
+    for k_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
+        X_tmp = copy.deepcopy(X[k_scheme][k_fit_N][k_subject][k_session])    # Just to lighten code
+        rows_dim, columns_dim = X_tmp.shape
+        X_tmp = np.matmul(W[:rows_dim, :rows_dim], X_tmp)
+        X[k_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp)
+
+whitening_done = True
+
+X_after_whitening = copy.deepcopy(X)
 
 # Creation of y from X to save computational resources
 # Initialization of the response vectors
@@ -265,26 +284,6 @@ for k_scheme, k_true_N, k_fraction, k_subject, k_sessions in itertools.product(r
 
 y_after_filtering = copy.deepcopy(y)
 
-# Whiten the design matrices
-
-# Whitening matrix
-white_mat = sio.loadmat('data/simu/whitening_matrix.mat')
-W = white_mat['W']
-# Complete the in-between session "holes"
-W[300:600, 300:600] = W[20:320, 20:320]
-
-if not whitening_done:
-    # Multiplying X with the whitening matrix
-    for k_scheme, k_fit_N, k_subject, k_session in itertools.product(range(n_schemes), range(n_N), range(n_subjects), range(n_sessions)):
-        X_tmp = copy.deepcopy(X[k_scheme][k_fit_N][k_subject][k_session])    # Just to lighten code
-        rows_dim, columns_dim = X_tmp.shape
-        X_tmp = np.matmul(W[:rows_dim, :rows_dim], X_tmp)
-        X[k_scheme][k_fit_N][k_subject][k_session] = copy.deepcopy(X_tmp)
-
-whitening_done = True
-
-X_after_whitening = copy.deepcopy(X)
-
 
 # Z-scoring of X and y
 
@@ -325,10 +324,10 @@ for k_scheme, k_true_N in itertools.product(range(n_schemes), range(n_N)):
 
             yz[k_scheme][k_true_N][k_fraction][k_subject][k_session] = \
                 (copy.deepcopy(y[k_scheme][k_true_N][k_fraction][k_subject][
-                                   k_session] - y_mean)) / snr_factor  # Centering+standardization
+                                   k_session] - y_mean))  # Centering+standardization
             yz_without_noise[k_scheme][k_true_N][k_fraction][k_subject][k_session] = \
                 (copy.deepcopy(y_without_noise[k_scheme][k_true_N][k_fraction][k_subject][
-                                   k_session] - y_mean)) / snr_factor  # Centering+standardization
+                                   k_session] - y_mean))  # Centering+standardization
 
             ### End of z-scoring of y
 
@@ -337,7 +336,7 @@ for k_scheme, k_true_N, k_fraction, k_subject in itertools.product(range(n_schem
                                                                    range(n_subjects)):
     for feature in range(weights[k_scheme][k_true_N][k_fraction][k_subject].shape[0]):
         weights[k_scheme][k_true_N][k_fraction][k_subject][feature] = \
-        weights[k_scheme][k_true_N][k_fraction][k_subject][feature] * scaling_factor_X / snr_factor
+        weights[k_scheme][k_true_N][k_fraction][k_subject][feature] * scaling_factor_X
 
 # The loops
 # The quantity to be computed during the cross validation
@@ -408,14 +407,14 @@ for k_scheme, k_fit_N, k_true_N, k_fraction, k_subject in itertools.product(rang
             = r2_score(y_without_noise_test, y_pred2)
 
 if distrib_type == 'bernoulli':
-    np.save('output/results/bernoulli/all/r2_test_snr'+str(snr)+'.npy', r2_test)
-    np.save('output/results/bernoulli/all/r2_train_snr'+str(snr)+'.npy', r2_train)
-    np.save('output/results/bernoulli/all/rho_test_snr'+str(snr)+'.npy', rho_test)
-    np.save('output/results/bernoulli/all/rho_train_snr'+str(snr)+'.npy', rho_train)
-    np.save('output/results/bernoulli/all/r2_true_test_snr'+str(snr)+'.npy', r2_true_test)
-    np.save('output/results/bernoulli/all/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
-    np.save('output/results/bernoulli/all/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
-    np.save('output/results/bernoulli/all/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
+    np.save('output/results/snr1/bernoulli/all/r2_test_snr'+str(snr)+'.npy', r2_test)
+    np.save('output/results/snr1/bernoulli/all/r2_train_snr'+str(snr)+'.npy', r2_train)
+    np.save('output/results/snr1/bernoulli/all/rho_test_snr'+str(snr)+'.npy', rho_test)
+    np.save('output/results/snr1/bernoulli/all/rho_train_snr'+str(snr)+'.npy', rho_train)
+    np.save('output/results/snr1/bernoulli/all/r2_true_test_snr'+str(snr)+'.npy', r2_true_test)
+    np.save('output/results/snr1/bernoulli/all/r2_true_train_snr'+str(snr)+'.npy', r2_true_train)
+    np.save('output/results/snr1/bernoulli/all/rho_true_test_snr'+str(snr)+'.npy', rho_true_test)
+    np.save('output/results/snr1/bernoulli/all/rho_true_train_snr'+str(snr)+'.npy', rho_true_train)
 
 if distrib_type == 'transition':
     np.save('output/results/transition/all/r2_test_snr'+str(snr)+'.npy', r2_test)
