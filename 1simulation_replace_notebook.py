@@ -91,7 +91,7 @@ distrib_type = 'bernoulli'
 [p1_dist_array, p1_mu_array, p1_sd_array] = neural_proba.import_distrib_param(n_subjects, n_sessions, n_stimuli,
                                                                                        distrib_type)
 
-n_subjects = 400
+n_subjects = 1
 
 # SNR as defined by ||signal||²/(||signal||²+||noise||²)
 snr = 1
