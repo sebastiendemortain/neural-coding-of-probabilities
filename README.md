@@ -27,4 +27,4 @@ The Matlab scripts are:
 - generate_transition_sequence.m: generate sequences of transition probabilities-driven stimuli
 - generate_bernoulli_sequence.m: generate sequences of Bernoulli-driven stimuli
 
-The data shall be placed in the data/simu folders. One trivial run example is available here. 
+The data shall be placed in the data/simu folders, after data generation from the Matlab scripts. 
