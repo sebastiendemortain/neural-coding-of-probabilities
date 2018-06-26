@@ -1,28 +1,18 @@
-#import h5py
-#import hdf5storage
-
 import random as rand
 import numpy as np
 # import matplotlib.pyplot as plt
 from scipy import stats
-from scipy import integrate
+# from scipy import integrate
 from nistats import hemodynamic_models
 
 import utils
 from scipy import io as sio
 
 
-'''Related to the distribution'''
-
-
 def import_distrib_param(n_subjects, n_sessions, n_stimuli, distrib_type):
 
-    # Initialization of the outputs
-    # p1_dist_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    # p1_mean_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
-    # p1_sd_array = [[None for j in range(n_sessions)] for i in range(n_subjects)]
     if distrib_type=='transition':
-        filepath = 'data/simu/transition_ideal_observer_{}subjects_{}sessions_{}stimuli_HMM.mat'.format(n_subjects, n_sessions,
+        filepath = 'data/simu/transition_ideal_observer_{}subjects_{}sessions_{}stimuli.mat'.format(n_subjects, n_sessions,
                                                                                          n_stimuli, distrib_type)
     elif distrib_type=='bernoulli':
         filepath = 'data/simu/bernoulli_ideal_observer_{}subjects_{}sessions_{}stimuli.mat'.format(n_subjects, n_sessions,
@@ -52,7 +42,6 @@ class distrib:
     def beta(self, x):
         return stats.beta.pdf(x, self.a, self.b)
 
-
 class tuning_curve:
     '''This class defines the tuning curve object
     '''
@@ -79,6 +68,7 @@ class tuning_curve:
                 mean = self.percentiles[idx]
             # Variance of the tuning curve
             sigma2_f = self.t**2
+            # Here I decide to control the upper bound of tuning curves (no normalization of probability density)
             #tc_value = 1/(np.sqrt(2*np.pi*sigma2_f))*np.exp(-0.5*(x-mean)**2/sigma2_f)
             tc_value = np.exp(-0.5*(x-mean)**2/sigma2_f)
             return tc_value
@@ -209,19 +199,9 @@ class tuning_curve:
                 # a=1
         return proj
 
-def get_population_fraction(scheme, population_sparsity_exp = 1):
-    if (scheme.find('ppc')!=-1 or scheme.find('rate')!=-1):
-        n_population = 2  # One population for the mean, one for conf
-        population_fraction = np.zeros(n_population)
-        population_fraction[0] = rand.uniform(0, 1) ** population_sparsity_exp
-        population_fraction[1] = 1 - population_fraction[0]
-    elif scheme.find('dpc')!=-1:  # DPC case
-        population_fraction = np.array([1])  # DPC contains only one population
-    else:
-        return
-    return population_fraction
 
 def get_subpopulation_fraction(n_population, n_subpopulation, subpopulation_sparsity_exp = 1):
+    '''To get subpopulation fractions according to the sparsity level'''
     # Fraction of each neural population
     subpopulation_fraction = np.zeros([n_population, n_subpopulation])
     n_neuron = np.zeros([n_population, n_subpopulation])  # Number of neuron per subpopulation
@@ -265,6 +245,7 @@ class voxel:
     # Neural activity given one distribution
     def generate_activity(self, distrib_array, mu_sd=np.nan, conf_sd=np.nan,
                           use_high_integration_resolution=False):
+        '''Gives the global firing activity in the voxel'''
         # 2 if 2D-grid for plotting the signal, 1 if one single continuous experiment
         n_dims = utils.get_dimension_list(distrib_array)
         if n_dims == 2:
@@ -407,6 +388,7 @@ class fmri:
 
     def get_regressor(self, exp, coding_scheme, tc=[], reg_fmri_gain=1, use_high_integration_resolution=False):
         hrf_model = 'spm'    # Simple regressor computation
+        '''Gives one regressor given the experiment object and other modalities'''
 
         if coding_scheme.find('rate')!=-1:
             # Get the features before convolution
