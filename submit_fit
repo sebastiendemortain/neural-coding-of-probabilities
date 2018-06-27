@@ -1,0 +1,18 @@
+#!/bin/sh
+# embedded options to qsub - start with #PBS
+# -- Name of the job ---
+#PBS -N neural_proba_fit
+# ?- specify queue --
+#PBS -q Nspin_long
+# -- estimated wall clock time (execution time): hh:mm:ss --
+#PBS -l walltime=70:00:00
+# ?- number of processors/cores/nodes --
+#PBS -l nodes=1:ppn=20
+
+# -- run in the current working (submission) directory --
+if test X$PBS_ENVIRONMENT = XPBS_BATCH; then cd $PBS_O_WORKDIR; fi
+# here follow the commands you want to execute
+
+module load python3
+
+python3 simulation1.py
